@@ -55,4 +55,3 @@ cd interactive-essay && npx http-server -c-1 -p 8080
 - 2026-08-01：裁掉《again》开头约 3.75 秒静音/极弱前奏（MPEG 帧级裁剪，保持原音质）；页面加载即预加载音频，进入瞬间出声。
 - 2026-08-01：底部歌词改为"彩蛋"——仅用户手动开关音乐后才轮播显示。
 - 2026-08-01：新增 **Cloudflare Pages 镜像站** `https://essay-mirror.pages.dev/`（免费、长期有效），与 GitHub Pages 互为备份，微信打不开时换用。
-- 2026-08-01：**修复镜像站手机无声音**——Cloudflare Pages 对静态资源不支持 HTTP Range 分段，iOS/微信播放 `<audio>` 失败；音乐引擎改为 **Web Audio 整首下载+解码播放**（不依赖 Range），GitHub/Cloudflare 两端统一可播。

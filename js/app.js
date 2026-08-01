@@ -206,73 +206,73 @@
 
   /* ================= 4. 音乐引擎 ================= */
   var Music = {
-    AC: null,           // AudioContext（真实音乐）
-    buffer: null,       // 解码后的 AudioBuffer（整首下载+解码，不依赖 Range）
-    gain: null,         // 主音量节点
-    srcNode: null,      // 当前播放源
-    realPaused: false,  // 真实音乐暂停标记
-    usingSynth: false,  // 是否使用内置合成占位音乐
-    ctx: null,          // AudioContext（合成模式）
-    synthGain: null,    // 合成主音量
-    paused: false,      // 合成模式暂停标记
-    userPlayed: false,  // 用户是否手动点过音乐按钮（彩蛋：歌词仅手动开关后轮播）
-    fakeTime: 0,
-    fakeBase: 0,
-    loading: null,      // 预加载 promise
-    _wanted: false,
+    audio: null,          // <audio> 实例（有真实文件时）
+    usingSynth: false,    // 是否使用内置合成占位音乐
+    ctx: null,            // AudioContext（合成模式）
+    synthGain: null,      // 合成主音量
+    paused: false,        // 合成模式暂停标记
+    userPlayed: false,    // 是否被用户手动点过音乐按钮（彩蛋：歌词仅手动开关后才轮播）
+    fakeTime: 0,          // 合成模式累计播放时长（ms）
+    fakeBase: 0,          // 合成模式本次播放起点（performance.now）
     lyricTimer: null,
+    timeListener: null,
 
-    /* 页面加载即整首下载并解码（无需 Range，任意静态托管可播），进入即响 */
+    /* 页面加载即预加载音频，进入时立即出声 */
     preload: function () {
-      if (this.buffer || this.loading) return;
-      var self = this;
-      var AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
-      this.loading = fetch(CFG.music.src)
-        .then(function (r) { return r.arrayBuffer(); })
-        .then(function (raw) {
-          if (!self.AC) self.AC = new AC();
-          return self.AC.decodeAudioData(raw);
-        })
-        .then(function (decoded) {
-          self.buffer = decoded;
-          self.loading = null;
-          /* 若已进入但下载慢还没播，缓冲好立即播放 */
-          if (self._wanted && !self.usingSynth && !self.srcNode) self.play();
-        })
-        .catch(function () { self.loading = null; });
+      if (this.audio) return;
+      var music = CFG.music;
+      var a = new Audio(music.src);
+      a.preload = 'auto';
+      a.loop = music.loop !== false;
+      a.volume = music.volume != null ? music.volume : 0.6;
+      a.load();
+      this.audio = a;
     },
 
     start: function () {
-      this._wanted = true;
-      if (!this.loading) this.preload();
-      if (this.buffer) { this.play(); return; }
       var self = this;
-      setTimeout(function () {
-        if (self._wanted && !self.usingSynth && !self.buffer) self.useSynth();
+      var audio = this.audio;
+      if (!audio) { this.preload(); audio = this.audio; }
+      if (!audio) return;
+
+      var fallbackTimer = setTimeout(function () {
+        if (!self.usingSynth && self.audio && !self.audio.paused) return; /* 已在播 */
+        if (!self.usingSynth) self.useSynth();
       }, 4000);
+
+      audio.addEventListener('canplaythrough', function () {
+        clearTimeout(fallbackTimer);
+        self.useAudio(audio);
+      });
+      audio.addEventListener('error', function () {
+        clearTimeout(fallbackTimer);
+        self.useSynth();
+      });
+
+      /* 已预加载完成则直接播放 */
+      if (audio.readyState >= 3) {
+        clearTimeout(fallbackTimer);
+        this.useAudio(audio);
+      } else {
+        safePlay(audio);
+      }
     },
 
-    play: function () {
-      if (!this.buffer) return;
-      var AC = this.AC || (this.AC = new (window.AudioContext || window.webkitAudioContext)());
-      if (AC.state === 'suspended') AC.resume();
-      if (!this.gain) {
-        this.gain = AC.createGain();
-        this.gain.gain.value = CFG.music.volume != null ? CFG.music.volume : 0.6;
-        this.gain.connect(AC.destination);
-      }
-      if (this.srcNode) { try { this.srcNode.stop(); } catch (e) {} }
-      var src = AC.createBufferSource();
-      src.buffer = this.buffer;
-      src.loop = CFG.music.loop !== false;
-      src.connect(this.gain);
-      src.start(0);
-      this.srcNode = src;
-      this.realPaused = false;
+    useAudio: function (audio) {
+      this._stopSynth();
+      this.audio = audio;
+      this.usingSynth = false;
       musicBadge.textContent = CFG.music.title + ' · ' + CFG.music.artist;
-      this._updateIcon();
-      if (this.userPlayed) this._startLyricCycle();   /* 彩蛋：仅手动开关后显示歌词 */
+      var self = this;
+      audio.addEventListener('play', function () {
+        self._updateIcon();
+        if (self.userPlayed) self._startLyricSync();   /* 彩蛋：仅手动开关后才显示歌词 */
+      });
+      audio.addEventListener('pause', function () {
+        self._updateIcon();
+        self._stopLyricSync();
+      });
+      safePlay(audio);
     },
 
     useSynth: function () {
@@ -321,7 +321,7 @@
       this.paused = false;
       this.fakeBase = performance.now();
       musicBadge.textContent = CFG.music.title + ' · ' + CFG.music.artist + '（试听）';
-      if (this.userPlayed) this._startLyricCycle();
+      if (this.userPlayed) this._startLyricCycle();   /* 彩蛋：仅手动开关后显示歌词 */
       this._updateIcon();
     },
 
@@ -340,14 +340,9 @@
           this._rampSynth(0);
           this._stopLyricCycle();
         }
-      } else if (this.buffer) {
-        if (this.realPaused) {
-          this.play();   /* 重新创建播放源续播 */
-        } else {
-          this.realPaused = true;
-          if (this.srcNode) { try { this.srcNode.stop(); } catch (e) {} this.srcNode = null; }
-          this._stopLyricCycle();
-        }
+      } else if (this.audio) {
+        if (this.audio.paused) safePlay(this.audio);
+        else this.audio.pause();
       }
       this._updateIcon();
     },
@@ -355,6 +350,51 @@
     _rampSynth: function (v) {
       if (!this.ctx || !this.synthGain) return;
       this.synthGain.gain.setTargetAtTime(v, this.ctx.currentTime, 0.3);
+    },
+
+    _stopSynth: function () {
+      if (!this.ctx) return;
+      try { this._rampSynth(0); } catch (e) {}
+      var ctx = this.ctx;
+      setTimeout(function () {
+        try { ctx.close && ctx.close(); } catch (e) {}
+      }, 800);
+      this.ctx = null;
+      this.synthGain = null;
+      this._stopLyricCycle();
+      this.usingSynth = false;
+      this.paused = false;
+    },
+
+    _startLyricSync: function () {
+      var self = this;
+      this._stopLyricSync();
+      var lyrics = CFG.music.lyrics || [];
+      if (!lyrics.length) return;
+      var hasTime = lyrics.some(function (l) { return typeof l.time === 'number'; });
+      if (!hasTime) { this._startLyricCycle(); return; }
+      var current = -1;
+      var onTime = function () {
+        var t = self.audio.currentTime;
+        var idx = -1;
+        for (var i = 0; i < lyrics.length; i++) {
+          if (lyrics[i].time <= t) idx = i; else break;
+        }
+        if (idx !== current) {
+          current = idx;
+          self._showLyric(idx >= 0 ? lyrics[idx].text : '');
+        }
+      };
+      this.audio.addEventListener('timeupdate', onTime);
+      this.timeListener = onTime;
+      onTime();
+    },
+
+    _stopLyricSync: function () {
+      if (this.timeListener && this.audio) {
+        this.audio.removeEventListener('timeupdate', this.timeListener);
+        this.timeListener = null;
+      }
     },
 
     _startLyricCycle: function () {
@@ -386,7 +426,7 @@
     },
 
     _updateIcon: function () {
-      var playing = this.usingSynth ? !this.paused : !!(this.srcNode && !this.realPaused);
+      var playing = this.usingSynth ? !this.paused : !!(this.audio && !this.audio.paused);
       musicBtn.classList.toggle('playing', playing);
     },
 
