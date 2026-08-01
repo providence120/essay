@@ -332,7 +332,7 @@ body.opened #musicBtn { opacity: 1; }
   background: linear-gradient(90deg, transparent, var(--accent), transparent);
 }
 
-.flow-section { margin-bottom: 4.6rem; }
+.flow-section { margin-bottom: 0; }
 
 .section-head {
   font-size: 1.15rem;
@@ -353,7 +353,7 @@ body.opened #musicBtn { opacity: 1; }
 
 /* 歌词插页 */
 .lyric-card {
-  margin: 5rem 0;
+  margin: 3rem 0;
   padding: 2.6rem 1.4rem;
   text-align: center;
   border-top: 1px solid var(--accent-soft);

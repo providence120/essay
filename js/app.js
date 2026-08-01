@@ -540,13 +540,13 @@
     var WHITE = [255, 255, 255];
     var rg = function (rgb, a) { return 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + a.toFixed(3) + ')'; };
 
-    /* 背景碎星：极淡的金色小点，呼吸闪烁 */
-    var dust = [];
-    for (var i = 0; i < 22; i++) {
-      dust.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.1 + 0.3, ph: Math.random() * Math.PI * 2 });
+    /* 金色粒子流（与正文背景同款，缓慢上飘） */
+    var WARM = [255, 250, 235];
+    var flows = [];
+    for (var i = 0; i < 64; i++) {
+      flows.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.6 + 0.4, a: Math.random() * 0.4 + 0.12, vy: Math.random() * 0.25 + 0.06, ph: Math.random() * Math.PI * 2 });
     }
 
-    /* 立体感金色五角星：基地位置 + 小范围飘动，始终明亮可点；点击收缩-回弹（不消失）+ 迸发光粒 */
     /* 避开"轻触 开启"按钮的脉冲波动范围，避免冲突 */
     var btnZone = { x: W / 2, y: H / 2, r: 140 };
     function updateBtnZone() {
@@ -558,32 +558,37 @@
     }
     updateBtnZone();
 
+    /* 3 颗呼吸金五星：置于上方、小范围飘动、不越界、与背景融为一个图层 */
     var stars = [];
     function newStar() {
       var bx = W / 2, by = H / 2;
-      for (var tries = 0; tries < 30; tries++) {
-        bx = 44 + Math.random() * (W - 88);
-        by = 64 + Math.random() * (H - 128);
+      for (var tries = 0; tries < 60; tries++) {
+        bx = 50 + Math.random() * (W - 100);
+        by = H * 0.06 + Math.random() * H * 0.3;      /* 上方区域 */
         var dzx = bx - btnZone.x, dzy = by - btnZone.y;
         if (dzx * dzx + dzy * dzy > btnZone.r * btnZone.r) break;
       }
       return {
         bx: bx, by: by,                   /* 基地位置 */
-        A: Math.random() * 15 + 8,        /* 飘动幅度 8~23 */
-        f1: 0.2 + Math.random() * 0.3,    /* 水平飘速 */
-        f2: 0.2 + Math.random() * 0.3,    /* 垂直飘速 */
+        A: Math.random() * 12 + 6,        /* 小范围飘动 6~18 */
+        f1: 0.25 + Math.random() * 0.25,  /* 水平飘速 */
+        f2: 0.25 + Math.random() * 0.25,  /* 垂直飘速 */
         p1: Math.random() * Math.PI * 2,  /* 相位 */
         p2: Math.random() * Math.PI * 2,
         x: bx, y: by,
-        R: Math.random() * 6 + 9,         /* 外接半径 9~15，目标大、易点击 */
+        R: Math.random() * 5 + 9,         /* 外接半径 9~14 */
         rot: Math.random() * Math.PI * 2, /* 固定角度 */
-        tw: Math.random() * Math.PI * 2,  /* 光晕呼吸相位 */
-        twSp: Math.random() * 0.6 + 0.4,  /* 呼吸速度 */
+        tw: Math.random() * Math.PI * 2,  /* 呼吸相位 */
+        twSp: Math.random() * 0.5 + 0.35, /* 呼吸速度 */
         bn: 0,                            /* 点击回弹进度 0~1 */
-        bnSp: 0.055                       /* 回弹速度/帧 */
+        bnSp: 0.06                        /* 回弹速度/帧 */
       };
     }
-    for (var s = 0; s < 16; s++) stars.push(newStar());
+    for (var s = 0; s < 3; s++) stars.push(newStar());
+
+    /* 流星（周期性划过，约每 2.3 秒起一道） */
+    var meteors = [];
+    var nextMeteor = performance.now() + 1200;
 
     var bursts = [];
 
@@ -596,7 +601,7 @@
           vx: Math.cos(ang) * sp,
           vy: Math.sin(ang) * sp - 0.5,
           r: Math.random() * 2 + 0.8,
-          white: Math.random() < 0.72,
+          white: Math.random() < 0.4,
           life: 1,
           decay: Math.random() * 0.017 + 0.009
         });
@@ -616,27 +621,41 @@
       c.closePath();
     }
 
+    /* 整层淡入：与封面文字一同呼吸显示（不再一加载就贴出来） */
+    var appearStart = performance.now();
+    var appearDur = 1900;
+
     var raf = null;
     var stopAt = 0;
 
     function draw() {
+      var now = performance.now();
       ctx.clearRect(0, 0, W, H);
-      var t = performance.now() * 0.001;
+      var t = now * 0.001;
 
-      /* 背景碎星 */
-      dust.forEach(function (d) {
-        var tw = 0.5 + 0.5 * Math.sin(t * 0.9 + d.ph);
+      /* 整层淡入：与封面文字一同出现（呼吸式显现，easeOutCubic） */
+      var op = Math.min(1, (now - appearStart) / appearDur);
+      op = 1 - Math.pow(1 - op, 3);
+      ctx.globalAlpha = op;
+
+      /* 金色粒子流（缓慢上飘） */
+      flows.forEach(function (f) {
+        f.y -= f.vy;
+        if (f.y < -6) { f.y = H + 6; f.x = Math.random() * W; }
+        var tw = 0.5 + 0.5 * Math.sin(t * 0.8 + f.ph);
         ctx.beginPath();
-        ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-        ctx.fillStyle = rg(gold, 0.22 * tw + 0.05);
+        ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+        ctx.fillStyle = rg(gold, f.a * tw);
         ctx.fill();
       });
 
       if (!document.body.classList.contains('opened')) {
+        /* 3 颗呼吸星：上方小范围飘动，不越界，整星呼吸 */
         stars.forEach(function (st) {
-          /* 小范围飘动：围绕基地位置浮动，保留移动动画 */
           st.x = st.bx + Math.sin(t * st.f1 + st.p1) * st.A;
           st.y = st.by + Math.sin(t * st.f2 + st.p2) * st.A * 0.7;
+          if (st.x < st.R) st.x = st.R; else if (st.x > W - st.R) st.x = W - st.R;
+          if (st.y < st.R) st.y = st.R; else if (st.y > H - st.R) st.y = H - st.R;
 
           /* 点击回弹：收缩到 0.25 再弹回 1（不消失、不换位） */
           var scale = 1;
@@ -648,49 +667,82 @@
           var outer = st.R * scale;
           if (outer < 0.6) return;
 
-          /* 光晕呼吸：只动光晕，星体始终明亮 */
-          var halo = 0.12 + 0.11 * (0.5 + 0.5 * Math.sin(t * st.twSp + st.tw));
+          /* 整星呼吸亮度 */
+          var breathe = 0.55 + 0.45 * Math.sin(t * st.twSp + st.tw);   /* 0.1~1 */
 
-          /* 柔光晕（金色） */
-          var g = ctx.createRadialGradient(st.x, st.y, 0, st.x, st.y, outer * 4.5);
-          g.addColorStop(0, rg(gold, halo));
+          /* 柔光晕（随呼吸） */
+          var g = ctx.createRadialGradient(st.x, st.y, 0, st.x, st.y, outer * 4);
+          g.addColorStop(0, rg(gold, 0.15 * breathe + 0.04));
           g.addColorStop(1, rg(gold, 0));
           ctx.fillStyle = g;
           ctx.beginPath();
-          ctx.arc(st.x, st.y, outer * 4.5, 0, Math.PI * 2);
+          ctx.arc(st.x, st.y, outer * 4, 0, Math.PI * 2);
           ctx.fill();
 
-          /* 投影：下方偏移的暗色星，制造悬浮立体感 */
-          starPath(ctx, st.x + outer * 0.14, st.y + outer * 0.2, outer, outer * 0.45, st.rot);
-          ctx.fillStyle = 'rgba(8, 12, 22, 0.42)';
+          /* 投影（轻，增强悬浮） */
+          starPath(ctx, st.x + outer * 0.12, st.y + outer * 0.18, outer, outer * 0.45, st.rot);
+          ctx.fillStyle = 'rgba(8,12,22,0.35)';
           ctx.fill();
 
-          /* 边缘柔化：稍大的低透明金色星（替代硬描边，凸显立体感） */
+          /* 边缘柔化 */
           starPath(ctx, st.x, st.y, outer * 1.1, outer * 1.1 * 0.45, st.rot);
-          ctx.fillStyle = rg(gold, 0.16);
+          ctx.fillStyle = rg(gold, 0.13 * breathe + 0.03);
           ctx.fill();
 
-          /* 3D 星体：金色、左上光源的渐变填充 */
+          /* 星体：金色渐变（亮度随呼吸） */
           starPath(ctx, st.x, st.y, outer, outer * 0.45, st.rot);
           var lg = ctx.createLinearGradient(st.x - outer, st.y - outer, st.x + outer, st.y + outer);
           lg.addColorStop(0, '#fff6dc');
-          lg.addColorStop(0.5, 'rgba(240,208,137,0.98)');
-          lg.addColorStop(1, 'rgba(198,160,96,0.92)');
+          lg.addColorStop(0.5, 'rgba(240,208,137,' + (0.85 * breathe + 0.13).toFixed(3) + ')');
+          lg.addColorStop(1, 'rgba(198,160,96,' + (0.8 * breathe + 0.12).toFixed(3) + ')');
           ctx.fillStyle = lg;
           ctx.fill();
 
-          /* 高光点：左上暖白镜面反光 */
+          /* 高光点（暖白） */
           var hx = st.x - outer * 0.3;
           var hy = st.y - outer * 0.34;
           var hr = outer * 0.2;
           var hg = ctx.createRadialGradient(hx, hy, 0, hx, hy, hr * 2);
-          hg.addColorStop(0, 'rgba(255,248,230,0.9)');
+          hg.addColorStop(0, 'rgba(255,248,230,' + (0.85 * breathe + 0.1).toFixed(3) + ')');
           hg.addColorStop(1, 'rgba(255,248,230,0)');
           ctx.fillStyle = hg;
           ctx.beginPath();
           ctx.arc(hx, hy, hr * 2, 0, Math.PI * 2);
           ctx.fill();
         });
+
+        /* 流星：周期划过（约每 2.3 秒起一道） */
+        if (now > nextMeteor) {
+          var fx = W * 0.1 + Math.random() * W * 0.6;
+          var fy = H * 0.05 + Math.random() * H * 0.22;
+          var ang = Math.PI * 0.35 + Math.random() * Math.PI * 0.3;
+          var sp = 5 + Math.random() * 3;
+          meteors.push({ x: fx, y: fy, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, life: 1, trail: [] });
+          nextMeteor = now + (2300 + Math.random() * 2500);
+        }
+        meteors.forEach(function (mt) {
+          mt.x += mt.vx;
+          mt.y += mt.vy;
+          mt.trail.push({ x: mt.x, y: mt.y });
+          if (mt.trail.length > 14) mt.trail.shift();
+          mt.life -= 0.006;
+          for (var k = 1; k < mt.trail.length; k++) {
+            var ta = mt.life * 0.55 * (k / mt.trail.length);
+            if (ta <= 0) continue;
+            ctx.beginPath();
+            ctx.moveTo(mt.trail[k - 1].x, mt.trail[k - 1].y);
+            ctx.lineTo(mt.trail[k].x, mt.trail[k].y);
+            ctx.strokeStyle = rg(gold, ta);
+            ctx.lineWidth = 1.2;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+          }
+          ctx.beginPath();
+          ctx.arc(mt.x, mt.y, 1.4, 0, Math.PI * 2);
+          ctx.fillStyle = rg(WARM, Math.max(0, mt.life));
+          ctx.fill();
+        });
+        meteors = meteors.filter(function (mt) { return mt.life > 0 && mt.x < W + 40 && mt.y < H + 40; });
       }
 
       /* 迸发光粒 */
@@ -702,16 +754,18 @@
         if (p.life > 0) {
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-          ctx.fillStyle = rg(p.white ? WHITE : gold, p.life * 0.92);
+          ctx.fillStyle = rg(p.white ? WARM : gold, p.life * 0.92);
           ctx.fill();
         }
       });
       bursts = bursts.filter(function (p) { return p.life > 0; });
 
+      ctx.globalAlpha = 1;
+
       /* 进入页面后保留短暂效果，随后停止循环（省电，避免持续重绘） */
       if (document.body.classList.contains('opened')) {
-        if (stopAt === 0) stopAt = performance.now() + 1400;
-        if (performance.now() > stopAt) { raf = null; return; }
+        if (stopAt === 0) stopAt = now + 1400;
+        if (now > stopAt) { raf = null; return; }
       }
       raf = requestAnimationFrame(draw);
     }
@@ -725,7 +779,7 @@
       for (var i = stars.length - 1; i >= 0; i--) {
         var st = stars[i];
         if (st.bn > 0) continue;
-        var hit = st.R * 2.4;               /* 命中范围放大，好点 */
+        var hit = st.R * 2.6;               /* 命中范围放大，好点 */
         var dx = st.x - px, dy = st.y - py;
         if (dx * dx + dy * dy < hit * hit) {
           st.bn = 0.0001;                   /* 开始收缩-回弹 */
