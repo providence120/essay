@@ -86,7 +86,9 @@ npx http-server -c-1 -p 8080
 已经完成 git 初始化并关联远程仓库，以后更新内容只需：
 
 1. 确保本机代理已开启（当前 git 走 `127.0.0.1:7897`，改代理端口需在项目里执行 `git config http.proxy http://127.0.0.1:新端口`）。
-2. **双击 `deploy.bat`** → 自动 `git add / commit / push` → 等 1~2 分钟生效。
+2. **双击 `deploy.bat`** → 自动刷新资源版本号 + `git add / commit / push` → 等 1~2 分钟生效。
+   > `deploy.bat` 会先跑 `scripts/bump.js` 给 css/js 自动换版本号（`?v=...`），保证微信等浏览器不会缓存旧版。
+3. 微信里如果还是旧版：点页面右上角 `···` → **刷新**（或先打开一次系统浏览器确认，再回微信刷新）。
 
 > 安全性提示：推送用的 token 保存在本地 `interactive-essay/.git/config` 里（明文）。建议：
 > - 每次发布完，到 GitHub `Settings → Developer settings → Personal access tokens` 删除该 token；

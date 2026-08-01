@@ -8,6 +8,9 @@ cd /d "%~dp0"
 
 echo Publishing to GitHub Pages...
 
+rem 自动更新资源版本号，防止微信/浏览器缓存旧版
+node scripts\bump.js
+
 git add -A
 git commit -m "update: %date% %time%"
 git push origin main
