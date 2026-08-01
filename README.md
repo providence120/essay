@@ -15,8 +15,8 @@
 ```js
 {
   id: 'shoubi',                 // ← 分享链接用：网址?id=shoubi
-  listTitle: '慢慢写下一切',     // ← 目录页显示名
-  listDesc: '一篇关于记录与热爱的随笔',
+  listTitle: '杂文随笔',         // ← 目录页显示名
+  listDesc: 'Do or die',
   meta: { coverTitle: '...', coverSubtitle: '...', coverHint: '轻触 开启', date: '2026 · 夏', ... },
   essay: {
     hero: '致屏幕那边的你：',

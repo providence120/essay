@@ -27,7 +27,7 @@
     textDim: '#9b8f7d',
     bgTop: '#0d0e13',
     bgBottom: '#16171f',
-    particles: 42
+    particles: 110
   };
 
   /* ---- 文章选择 ---- */
@@ -128,7 +128,9 @@
     html += '<header class="hero">';
     html += '<p class="hero-eyebrow">' + esc(CFG.meta.date) + '</p>';
     html += '<h1 class="hero-title">' + esc(CFG.meta.coverTitle) + '</h1>';
-    html += '<p class="hero-greet">' + esc(essay.hero) + '</p>';
+    if (essay.hero) {
+      html += '<p class="hero-greet">' + esc(essay.hero) + '</p>';
+    }
     html += '<div class="hero-line"></div>';
     html += '</header>';
 
@@ -439,11 +441,11 @@
     });
   }
 
-  /* ---------------- 7. 漂浮光点 ---------------- */
+  /* ---------------- 7. 漂浮光点（沉浸增强：小星尘 + 大光晕） ---------------- */
   function initParticles() {
     if (!particlesCanvas) return;
     var theme = CFG ? (CFG.theme || DEFAULT_THEME) : DEFAULT_THEME;
-    var n = theme.particles != null ? theme.particles : 42;
+    var n = theme.particles != null ? theme.particles : 110;
     if (n <= 0 || reduceMotion) return;
 
     var canvas = particlesCanvas;
@@ -461,9 +463,22 @@
       dots.push({
         x: Math.random() * W,
         y: Math.random() * H,
-        r: Math.random() * 1.6 + 0.4,
-        vy: Math.random() * 0.22 + 0.05,
-        a: Math.random() * 0.5 + 0.12,
+        r: Math.random() * 2.2 + 0.5,
+        vy: Math.random() * 0.28 + 0.06,
+        a: Math.random() * 0.55 + 0.15,
+        ph: Math.random() * Math.PI * 2
+      });
+    }
+
+    /* 大光晕：缓慢漂移的柔光，制造纵深与沉浸感 */
+    var orbs = [];
+    for (var o = 0; o < 7; o++) {
+      orbs.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r: 60 + Math.random() * 90,
+        a: 0.018 + Math.random() * 0.03,
+        vy: Math.random() * 0.05 + 0.01,
         ph: Math.random() * Math.PI * 2
       });
     }
@@ -471,6 +486,20 @@
     (function draw() {
       ctx2d.clearRect(0, 0, W, H);
       var t = performance.now() * 0.001;
+
+      orbs.forEach(function (ob) {
+        ob.y -= ob.vy;
+        if (ob.y < -ob.r) { ob.y = H + ob.r; ob.x = Math.random() * W; }
+        var tw = 0.7 + 0.3 * Math.sin(t * 0.4 + ob.ph);
+        var g = ctx2d.createRadialGradient(ob.x, ob.y, 0, ob.x, ob.y, ob.r);
+        g.addColorStop(0, 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + (ob.a * tw).toFixed(4) + ')');
+        g.addColorStop(1, 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',0)');
+        ctx2d.fillStyle = g;
+        ctx2d.beginPath();
+        ctx2d.arc(ob.x, ob.y, ob.r, 0, Math.PI * 2);
+        ctx2d.fill();
+      });
+
       dots.forEach(function (d) {
         d.y -= d.vy;
         if (d.y < -4) { d.y = H + 4; d.x = Math.random() * W; }
@@ -482,6 +511,108 @@
       });
       requestAnimationFrame(draw);
     })();
+
+    window.addEventListener('resize', function () {
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    });
+  }
+
+  /* ---------------- 8. 封面繁星 + 点击光粒 ---------------- */
+  function initCoverFX() {
+    var canvas = $('#coverCanvas');
+    if (!canvas || reduceMotion) return;
+    var ctx = canvas.getContext && canvas.getContext('2d');
+    if (!ctx) return;
+
+    var W = canvas.width = window.innerWidth;
+    var H = canvas.height = window.innerHeight;
+    var theme = CFG ? (CFG.theme || DEFAULT_THEME) : DEFAULT_THEME;
+    var hex = (theme.accent || '#e8c68a').replace('#', '');
+    var num = parseInt(hex, 16);
+    var rgb = [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+
+    var stars = [];
+    for (var i = 0; i < 90; i++) {
+      stars.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r: Math.random() * 1.5 + 0.4,
+        a: Math.random() * 0.6 + 0.25,
+        ph: Math.random() * Math.PI * 2,
+        vy: Math.random() * 0.12 + 0.02
+      });
+    }
+
+    var bursts = [];
+    var rings = [];
+
+    function burst(x, y) {
+      for (var i = 0; i < 20; i++) {
+        var ang = Math.random() * Math.PI * 2;
+        var sp = Math.random() * 4.6 + 1.2;
+        bursts.push({
+          x: x, y: y,
+          vx: Math.cos(ang) * sp,
+          vy: Math.sin(ang) * sp,
+          r: Math.random() * 2 + 1,
+          life: 1,
+          decay: Math.random() * 0.018 + 0.01
+        });
+      }
+      rings.push({ x: x, y: y, r: 2, life: 1 });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      if (!document.body.classList.contains('opened')) {
+        var t = performance.now() * 0.001;
+        stars.forEach(function (s) {
+          s.y -= s.vy;
+          if (s.y < -4) { s.y = H + 4; s.x = Math.random() * W; }
+          var tw = 0.55 + 0.45 * Math.sin(t * 0.9 + s.ph);
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + (s.a * tw).toFixed(3) + ')';
+          ctx.fill();
+        });
+      }
+
+      rings.forEach(function (r) {
+        r.r += 1.8;
+        r.life -= 0.035;
+        if (r.life > 0) {
+          ctx.beginPath();
+          ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + (r.life * 0.5).toFixed(3) + ')';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+      });
+      rings = rings.filter(function (r) { return r.life > 0; });
+
+      bursts.forEach(function (p) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.045;
+        p.life -= p.decay;
+        if (p.life > 0) {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + (p.life * 0.9).toFixed(3) + ')';
+          ctx.fill();
+        }
+      });
+      bursts = bursts.filter(function (p) { return p.life > 0; });
+
+      requestAnimationFrame(draw);
+    }
+    draw();
+
+    cover.addEventListener('pointerdown', function (e) {
+      var rect = canvas.getBoundingClientRect();
+      burst(e.clientX - rect.left, e.clientY - rect.top);
+    });
 
     window.addEventListener('resize', function () {
       W = canvas.width = window.innerWidth;
@@ -503,6 +634,7 @@
     bindCover();
     bindMusic();
     initParticles();
+    initCoverFX();
   }
 
   if (document.readyState === 'loading') {

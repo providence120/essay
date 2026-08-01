@@ -68,8 +68,20 @@ body::before {
 }
 
 .cover-inner {
+  position: relative;
+  z-index: 1;
   padding: 2rem;
   animation: coverIn 1.6s ease both;
+}
+
+/* 封面繁星画布 */
+#coverCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
 }
 
 @keyframes coverIn {
@@ -98,11 +110,16 @@ body::before {
 
 .cover-subtitle {
   margin-top: 1.5rem;
-  font-size: 1rem;
-  color: var(--text-dim);
-  letter-spacing: 0.12em;
+  font-size: 1.05rem;
+  color: var(--accent);
+  letter-spacing: 0.22em;
+  font-style: italic;
+  opacity: 0.9;
   animation: fadeIn 1.4s 1.3s ease both;
 }
+
+/* 封面提示留空时不占位 */
+#coverTip:empty { display: none; }
 
 /* 开启按钮 */
 #coverBtn {
@@ -221,44 +238,29 @@ body.opened #stage {
   transition: opacity 0.8s ease 0.5s;
 }
 body.opened #musicBtn { opacity: 1; }
+/* 音符跳动图标（三根音柱，播放时跳动） */
 #musicBtn .music-icon {
-  width: 0.8rem;
-  height: 0.8rem;
-  border-radius: 50%;
-  border: 2px solid var(--accent);
-  position: relative;
-  transition: opacity 0.3s;
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  width: 14px;
+  height: 14px;
 }
-#musicBtn .music-icon::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0.3rem;
-  height: 0.3rem;
-  margin: -0.15rem;
-  border-radius: 50%;
+#musicBtn .music-icon i {
+  display: block;
+  width: 3px;
+  border-radius: 2px;
   background: var(--accent);
-  transition: transform 0.3s ease;
+  height: 5px;
+  transform-origin: bottom;
+  transition: height 0.3s ease;
 }
-#musicBtn.playing .music-icon::before { transform: scale(0.35); opacity: 0.4; }
-#musicBtn.playing .music-icon::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0.02rem;
-  height: 0.02rem;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow:
-    -0.18rem -0.12rem 0 0.06rem var(--accent),
-     0.18rem -0.12rem 0 0.06rem var(--accent),
-    -0.18rem  0.12rem 0 0.06rem var(--accent),
-     0.18rem  0.12rem 0 0.06rem var(--accent);
-  animation: spin 1.6s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
+#musicBtn.playing .music-icon i:nth-child(1) { animation: eq-a .7s ease-in-out infinite alternate; }
+#musicBtn.playing .music-icon i:nth-child(2) { animation: eq-b .55s ease-in-out infinite alternate; }
+#musicBtn.playing .music-icon i:nth-child(3) { animation: eq-c .8s ease-in-out infinite alternate; }
+@keyframes eq-a { from { height: 5px;  } to { height: 13px; } }
+@keyframes eq-b { from { height: 12px; } to { height: 4px;  } }
+@keyframes eq-c { from { height: 7px;  } to { height: 14px; } }
 
 /* 底部歌词条 */
 #lyricBar {
@@ -302,7 +304,8 @@ body.opened #musicBtn { opacity: 1; }
   font-weight: 600;
   letter-spacing: 0.16em;
   text-indent: 0.16em;
-  color: var(--text);
+  color: var(--accent);
+  text-shadow: 0 0 28px rgba(232, 198, 138, 0.28);
   line-height: 1.5;
 }
 .hero-greet {
