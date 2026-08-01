@@ -418,3 +418,60 @@ body.opened #musicBtn { opacity: 1; }
   #essay { padding-top: 6.5rem; }
   .paragraph { font-size: 1.16rem; }
 }
+
+/* ============ 目录页（多篇随笔） ============ */
+body.picker-mode #musicBtn,
+body.picker-mode #lyricBar { display: none; }
+
+.essay-list {
+  text-align: center;
+  padding-top: 2rem;
+}
+.essay-list-title {
+  font-size: 1.6rem;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  color: var(--accent);
+  margin-bottom: 0.6rem;
+}
+.essay-list-sub {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  letter-spacing: 0.2em;
+  margin-bottom: 3rem;
+}
+.essay-item {
+  display: block;
+  text-align: left;
+  margin: 1.1rem 0;
+  padding: 1.3rem 1.4rem;
+  border: 1px solid var(--accent-soft);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.35s ease, background 0.35s ease, transform 0.35s ease;
+}
+.essay-item:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  transform: translateY(-2px);
+}
+.essay-item-title {
+  display: block;
+  font-size: 1.15rem;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+.essay-item-desc {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+}
+.essay-item-arrow {
+  float: right;
+  color: var(--text-dim);
+  margin-top: -1.2rem;
+}

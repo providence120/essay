@@ -1,10 +1,12 @@
 ﻿/*
  * ============================================================
- *  essays 流动随笔 · 引擎
+ *  essays 随笔集 · 引擎
  *  ----------------------------------------------------------
  *  结构：
+ *    0. 文章选择：?id=xxx 打开指定随笔；不传则自动打开唯一一篇，
+ *       多篇时显示目录页
  *    1. 封面（缓冲/开启）→ 进入正文
- *    2. 根据 config.js 渲染整篇随笔
+ *    2. 根据选中随笔渲染整篇内容（每篇可独立主题/音乐）
  *    3. 滚动渐入动画（IntersectionObserver）
  *    4. 音乐引擎：真实音频 + 内置合成占位（Web Audio）
  *    5. 歌词同步 / 试听轮播
@@ -14,7 +16,28 @@
 (function () {
   'use strict';
 
-  var CFG = window.ESSAY_CONFIG;
+  var ESSAYS = window.ESSAYS || [];
+
+  /* 主题默认值 */
+  var DEFAULT_THEME = {
+    fontFamily: "'LXGW WenKai', 'Kaiti SC', 'STKaiti', 'KaiTi', serif",
+    accent: '#e8c68a',
+    accentSoft: 'rgba(232, 198, 138, 0.16)',
+    text: '#e9e2d0',
+    textDim: '#9b8f7d',
+    bgTop: '#0d0e13',
+    bgBottom: '#16171f',
+    particles: 42
+  };
+
+  /* ---- 文章选择 ---- */
+  var params = new URLSearchParams(window.location.search);
+  var pickId = params.get('id');
+  var selected = ESSAYS.filter(function (e) { return e.id === pickId; })[0];
+  var pickerMode = !selected && ESSAYS.length > 1;
+  if (!selected && !pickerMode) selected = ESSAYS[0];
+
+  var CFG = selected;
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ---------------- 工具 ---------------- */
@@ -40,7 +63,6 @@
   /* ---------------- DOM ---------------- */
   var cover = $('#cover');
   var coverBtn = $('#coverBtn');
-  var stage = $('#stage');
   var essayRoot = $('#essay');
   var progressBar = $('#progressBar');
   var musicBtn = $('#musicBtn');
@@ -48,19 +70,58 @@
   var lyricLine = $('#lyricLine');
   var particlesCanvas = $('#particles');
 
-  /* ---------------- 1. 封面信息 + 渲染正文 ---------------- */
+  /* ---------------- 主题 -> CSS 变量 ---------------- */
+  function applyTheme(theme) {
+    var t = theme || DEFAULT_THEME;
+    var root = document.documentElement.style;
+    root.setProperty('--accent', t.accent || DEFAULT_THEME.accent);
+    root.setProperty('--accent-soft', t.accentSoft || DEFAULT_THEME.accentSoft);
+    root.setProperty('--text', t.text || DEFAULT_THEME.text);
+    root.setProperty('--text-dim', t.textDim || DEFAULT_THEME.textDim);
+    root.setProperty('--bg-top', t.bgTop || DEFAULT_THEME.bgTop);
+    root.setProperty('--bg-bottom', t.bgBottom || DEFAULT_THEME.bgBottom);
+    root.setProperty('--font', t.fontFamily || DEFAULT_THEME.fontFamily);
+  }
+
+  /* ---------------- 封面信息 ---------------- */
   function applyMeta() {
+    if (pickerMode) {
+      $('#coverEyebrow').textContent = '随笔集';
+      $('#coverTitle').textContent = '我的随笔';
+      $('#coverSubtitle').textContent = '一篇一篇，慢慢写';
+      $('#coverBtn').textContent = '看看';
+      $('#coverTip').textContent = '';
+      document.title = '随笔集';
+      return;
+    }
     var m = CFG.meta;
-    $('#coverEyebrow').textContent = m.coverEyebrow || '一首歌 · 一封信';
+    $('#coverEyebrow').textContent = m.coverEyebrow || '';
     $('#coverTitle').textContent = m.coverTitle || '';
     $('#coverSubtitle').textContent = m.coverSubtitle || '';
     $('#coverBtn').textContent = m.coverHint || '轻触 开启';
     $('#coverTip').textContent = m.tip || '';
-    $('#musicBadge').textContent = CFG.music.title || 'music';
     document.title = m.pageTitle || m.coverTitle || '';
   }
 
+  /* ---------------- 目录页（多篇时） ---------------- */
+  function renderPicker() {
+    var html = '<div class="essay-list">';
+    html += '<h2 class="essay-list-title">随笔集</h2>';
+    html += '<p class="essay-list-sub">点击进入任意一篇</p>';
+    ESSAYS.forEach(function (e) {
+      html += '<a class="essay-item reveal" href="?id=' + encodeURIComponent(e.id) + '">';
+      html += '<span class="essay-item-title">' + esc(e.listTitle || e.id) + '</span>';
+      if (e.listDesc) html += '<span class="essay-item-desc">' + esc(e.listDesc) + '</span>';
+      html += '<span class="essay-item-arrow">→</span>';
+      html += '</a>';
+    });
+    html += '</div>';
+    essayRoot.innerHTML = html;
+  }
+
+  /* ---------------- 渲染正文 ---------------- */
   function renderEssay() {
+    if (pickerMode) { renderPicker(); return; }
     var essay = CFG.essay;
     var html = '';
 
@@ -153,7 +214,6 @@
     lyricTimer: null,
     timeListener: null,
 
-    /* 开启：优先尝试真实音频，失败则降级合成音乐 */
     start: function () {
       var music = CFG.music;
       var audio = new Audio(music.src);
@@ -216,7 +276,6 @@
       filter.frequency.value = 900;
       filter.connect(master);
 
-      /* 呼吸感 LFO */
       var lfo = ctx.createOscillator();
       var lfoGain = ctx.createGain();
       lfo.frequency.value = 0.07;
@@ -225,7 +284,6 @@
       lfoGain.connect(master.gain);
       lfo.start();
 
-      /* 温暖和弦：A2 C#3 E3 A3 */
       [110, 138.59, 164.81, 220].forEach(function (f, i) {
         var osc = ctx.createOscillator();
         var g = ctx.createGain();
@@ -249,7 +307,6 @@
       this._updateIcon();
     },
 
-    /* 播放/暂停切换 */
     toggle: function () {
       if (this.usingSynth) {
         if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
@@ -276,7 +333,6 @@
       this.synthGain.gain.setTargetAtTime(v, this.ctx.currentTime, 0.3);
     },
 
-    /* 停止合成音并释放 AudioContext（切换到真实音频时调用） */
     _stopSynth: function () {
       if (!this.ctx) return;
       try { this._rampSynth(0); } catch (e) {}
@@ -291,13 +347,11 @@
       this.paused = false;
     },
 
-    /* ------- 歌词 ------- */
     _startLyricSync: function () {
       var self = this;
       this._stopLyricSync();
       var lyrics = CFG.music.lyrics || [];
       if (!lyrics.length) return;
-      /* 没有时间轴时退化为轮播显示 */
       var hasTime = lyrics.some(function (l) { return typeof l.time === 'number'; });
       if (!hasTime) { this._startLyricCycle(); return; }
       var current = -1;
@@ -362,7 +416,10 @@
   function openPage() {
     if (document.body.classList.contains('opened')) return;
     document.body.classList.add('opened');
-    Music.start();
+    if (!pickerMode) {
+      Music.start();
+      setTimeout(function () { $('#musicBadge').textContent = CFG.music.title || 'music'; }, 0);
+    }
     setTimeout(initReveal, 120);
   }
 
@@ -385,7 +442,8 @@
   /* ---------------- 7. 漂浮光点 ---------------- */
   function initParticles() {
     if (!particlesCanvas) return;
-    var n = CFG.theme && CFG.theme.particles != null ? CFG.theme.particles : 42;
+    var theme = CFG ? (CFG.theme || DEFAULT_THEME) : DEFAULT_THEME;
+    var n = theme.particles != null ? theme.particles : 42;
     if (n <= 0 || reduceMotion) return;
 
     var canvas = particlesCanvas;
@@ -394,7 +452,7 @@
 
     var W = canvas.width = window.innerWidth;
     var H = canvas.height = window.innerHeight;
-    var hex = (CFG.theme.accent || '#e8c68a').replace('#', '');
+    var hex = (theme.accent || '#e8c68a').replace('#', '');
     var num = parseInt(hex, 16);
     var rgb = [(num >> 16) & 255, (num >> 8) & 255, num & 255];
 
@@ -433,7 +491,13 @@
 
   /* ---------------- 启动 ---------------- */
   function init() {
+    if (!CFG && !pickerMode) {
+      essayRoot.innerHTML = '<p class="paragraph" style="text-align:center">暂无文章</p>';
+      return;
+    }
     applyMeta();
+    if (pickerMode) document.body.classList.add('picker-mode');
+    else applyTheme(CFG.theme);
     renderEssay();
     initProgress();
     bindCover();

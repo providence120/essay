@@ -31,11 +31,11 @@ async function main() {
     process.exit(1);
   }
 
-  /* 1. 收集页面会渲染的所有文本（来源：config + index.html + app.js 兜底文案） */
-  const configSrc = fs.readFileSync(path.join(ROOT, 'js', 'config.js'), 'utf8');
+  /* 1. 收集页面会渲染的所有文本（来源：essays + index.html + app.js 兜底文案） */
+  const essaysSrc = fs.readFileSync(path.join(ROOT, 'js', 'essays.js'), 'utf8');
   const indexSrc = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   const appSrc = fs.readFileSync(path.join(ROOT, 'js', 'app.js'), 'utf8');
-  const sources = configSrc + '\n' + indexSrc + '\n' + appSrc;
+  const sources = essaysSrc + '\n' + indexSrc + '\n' + appSrc;
 
   /* 2. 提取唯一字符 + 基础安全集（数字、字母、常见中英标点） */
   const safety =

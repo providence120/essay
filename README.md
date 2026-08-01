@@ -8,27 +8,34 @@
 
 ---
 
-## 一、改随笔（最常用）
+## 一、改随笔 / 新增随笔（最常用）
 
-打开 `js/config.js`，改 `essay` 部分即可，纯文字，无需懂代码：
+**所有文章都在 `js/essays.js` 里**，每篇是一个 `{ ... }` 对象。改文字、加段落都在这里，纯文本，无需懂代码：
 
 ```js
-essay: {
-  hero: '致屏幕那边的你：',
-  sections: [
-    { heading: '一、那首歌', paragraphs: ['第一段……', '第二段……'] },
-    { heading: '二、屏那边的光', paragraphs: ['……'] }
-  ],
-  lyricInterlude: ['也许说 我爱你这感觉一定很假', '我不是想要和你搁着屏幕说话'],
-  sign: ['——', '写于某一天的深夜', '海风记得，我也记得']
+{
+  id: 'shoubi',                 // ← 分享链接用：网址?id=shoubi
+  listTitle: '慢慢写下一切',     // ← 目录页显示名
+  listDesc: '一篇关于记录与热爱的随笔',
+  meta: { coverTitle: '...', coverSubtitle: '...', coverHint: '轻触 开启', date: '2026 · 夏', ... },
+  essay: {
+    hero: '致屏幕那边的你：',
+    sections: [
+      { heading: '一、那节语文课', paragraphs: ['第一段……', '第二段……'] }
+    ],
+    lyricInterlude: ['也许说 我爱你这感觉一定很假', '我不是想要和你搁着屏幕说话'],
+    sign: ['——', '写于某一天的深夜']
+  },
+  music: { title: 'again', artist: '王极', src: 'assets/audio/again.mp3', lyrics: [...] },
+  theme: { accent: '#e8c68a', ... }   // 每篇可独立配色
 }
 ```
 
-- `heading`：小节标题，可留空 `''`。
-- `paragraphs`：每段一行，段数不限，章节不限。
-- `lyricInterlude`：正文中间的歌词语录卡（装饰段落）。
-- `sign`：落款，逐行显示。
-- `meta` 里的 `coverTitle / coverSubtitle / coverHint / author / date` 是封面与页头信息，一起改。
+- **新增一篇**：复制上面整个 `{...}` 块，换一个 `id`、改内容，放到 `window.ESSAYS` 数组里（注意块与块之间用英文逗号隔开）。
+- **每篇独立链接**：`网址?id=你的id`（如 `.../?id=shoubi`），互不覆盖，旧文章永远可访问。
+- **目录页**：访问 `网址`（不带 `?id=`）——只有一篇时自动打开；多篇时显示文章列表。
+- **每篇可换歌**：`music` 里的 `src` 指向各自的 mp3 文件（放进 `assets/audio/`）。
+- **换文后若出现新字**，记得重新生成字体子集（见"三、换字体"）。
 
 ## 二、换背景音乐
 
@@ -116,13 +123,13 @@ git push -u origin main
 interactive-essay/
 ├── index.html              # 入口（og 分享卡片信息也在这）
 ├── css/style.css           # 全部样式（配色变量在 :root）
-├── js/config.js            # ★ 唯一要改的配置（正文/音乐/歌词/主题）
-├── js/app.js               # 引擎：渲染/动画/音乐/歌词/进度
+├── js/essays.js            # ★ 所有随笔配置（新增/修改都在这）
+├── js/app.js               # 引擎：选文/渲染/动画/音乐/歌词/进度
 ├── deploy.bat              # ★ 双击即发布到 GitHub Pages
 ├── scripts/build-fonts.js  # 换文后重建字体的脚本（可选）
 ├── scripts/deploy.js       # 备用：github.com 直连不通时用 API 发布
 ├── assets/fonts/           # 霞鹜文楷子集（2 个 woff2 + css + OFL 授权）
-├── assets/audio/again.mp3  # 背景音乐（王极《again》）
+├── assets/audio/           # 每篇随笔的背景音乐 mp3 都放这里
 └── docs/dev-log.md         # 开发日志
 ```
 
