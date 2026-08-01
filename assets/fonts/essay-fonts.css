@@ -1,0 +1,15 @@
+@font-face {
+  font-family: 'LXGW WenKai';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('essay-regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'LXGW WenKai';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('essay-medium.woff2') format('woff2');
+}

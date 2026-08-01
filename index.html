@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>慢慢写下一切</title>
+  <meta name="description" content="一篇关于记录与热爱的随笔，让《again》陪你读完。" />
+
+  <!-- 分享卡片（微信 / 各平台抓取），请按需修改图片地址 -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="慢慢写下一切" />
+  <meta property="og:description" content="一篇关于记录与热爱的随笔，让《again》陪你读完。" />
+  <meta property="og:image" content="share-cover.png" />
+  <meta name="theme-color" content="#0d0e13" />
+
+  <!-- 字体（霞鹜文楷 · 已按本篇随笔子集化，仅 2 个小文件） -->
+  <link rel="stylesheet" href="assets/fonts/essay-fonts.css" />
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <canvas id="particles"></canvas>
+
+  <!-- 顶部阅读进度 -->
+  <div id="progressBar"></div>
+
+  <!-- 音乐开关 -->
+  <button id="musicBtn" type="button" aria-label="播放 / 暂停音乐">
+    <span class="music-icon"></span>
+    <span id="musicBadge">again</span>
+  </button>
+
+  <!-- 封面：缓冲 + 开启 -->
+  <div id="cover" role="button" tabindex="-1" aria-label="开启这篇随笔">
+    <div class="cover-inner">
+      <p class="cover-eyebrow" id="coverEyebrow">一首歌 · 一封信</p>
+      <h1 class="cover-title" id="coverTitle">慢慢写下一切</h1>
+      <p class="cover-subtitle" id="coverSubtitle">用一首歌的时间，读完这一篇想对你说的话</p>
+      <button id="coverBtn" type="button">轻触 开启</button>
+      <p class="cover-tip" id="coverTip">建议戴上耳机</p>
+    </div>
+  </div>
+
+  <!-- 正文舞台 -->
+  <main id="stage">
+    <article id="essay"></article>
+  </main>
+
+  <!-- 底部歌词 -->
+  <div id="lyricBar">
+    <p id="lyricLine"></p>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

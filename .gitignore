@@ -1,0 +1,4 @@
+# 本地构建/部署辅助文件，不推送到 GitHub
+node_modules/
+assets/fonts/_source/
+scripts/.deploy-token

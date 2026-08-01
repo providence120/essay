@@ -1,0 +1,420 @@
+/* ============================================================
+   essays 流动随笔 · 样式
+   深墨夜色调 + 暖金点缀 + 霞鹜文楷
+   ============================================================ */
+
+:root {
+  --accent: #e8c68a;
+  --accent-soft: rgba(232, 198, 138, 0.16);
+  --text: #e9e2d0;
+  --text-dim: #9b8f7d;
+  --bg-top: #0d0e13;
+  --bg-bottom: #16171f;
+  --font: 'LXGW WenKai', 'Kaiti SC', 'STKaiti', 'KaiTi', serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: var(--font);
+  color: var(--text);
+  background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom) 70%) fixed;
+  line-height: 2;
+  letter-spacing: 0.04em;
+  overflow-x: hidden;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection { background: var(--accent-soft); color: var(--accent); }
+
+/* 背景光晕 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(60% 45% at 50% 0%, rgba(232, 198, 138, 0.10), transparent 70%),
+    radial-gradient(45% 35% at 85% 90%, rgba(120, 140, 190, 0.08), transparent 70%);
+  pointer-events: none;
+}
+
+/* 粒子画布 */
+#particles {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ============ 封面（缓冲/开启） ============ */
+#cover {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  background:
+    radial-gradient(70% 55% at 50% 38%, rgba(232, 198, 138, 0.10), transparent 68%),
+    linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+  transition: opacity 1.1s ease, visibility 1.1s ease, transform 1.1s ease;
+}
+
+.cover-inner {
+  padding: 2rem;
+  animation: coverIn 1.6s ease both;
+}
+
+@keyframes coverIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.cover-eyebrow {
+  font-size: 0.9rem;
+  letter-spacing: 0.55em;
+  text-indent: 0.55em;
+  color: var(--text-dim);
+  margin-bottom: 1.6rem;
+  animation: fadeIn 2.2s 0.4s ease both;
+}
+
+.cover-title {
+  font-size: clamp(2.2rem, 9vw, 3.6rem);
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+  color: var(--accent);
+  text-shadow: 0 0 34px rgba(232, 198, 138, 0.35);
+  animation: fadeIn 1.4s 0.8s ease both;
+}
+
+.cover-subtitle {
+  margin-top: 1.5rem;
+  font-size: 1rem;
+  color: var(--text-dim);
+  letter-spacing: 0.12em;
+  animation: fadeIn 1.4s 1.3s ease both;
+}
+
+/* 开启按钮 */
+#coverBtn {
+  margin-top: 3.2rem;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.9rem 2.6rem;
+  border: 1px solid var(--accent-soft);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 1.05rem;
+  letter-spacing: 0.35em;
+  text-indent: 0.35em;
+  cursor: pointer;
+  transition: all 0.4s ease;
+  animation: fadeIn 1.2s 1.8s ease both;
+}
+#coverBtn:hover { background: rgba(232, 198, 138, 0.28); transform: translateY(-2px); }
+#coverBtn::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 999px;
+  border: 1px solid rgba(232, 198, 138, 0.5);
+  animation: pulse 2.6s ease-out infinite;
+}
+@keyframes pulse {
+  0%   { transform: scale(1); opacity: 0.9; }
+  70%  { transform: scale(1.18); opacity: 0; }
+  100% { transform: scale(1.18); opacity: 0; }
+}
+
+.cover-tip {
+  margin-top: 2.4rem;
+  font-size: 0.8rem;
+  color: rgba(155, 143, 125, 0.7);
+  letter-spacing: 0.2em;
+  animation: fadeIn 1.4s 2.4s ease both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* 开启后的封面退场 */
+body.opened #cover {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(1.06);
+}
+
+/* ============ 正文舞台 ============ */
+#stage {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 1.4s ease, transform 1.4s ease;
+}
+body.opened #stage {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+#essay {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 9rem 1.6rem 6rem;
+}
+
+/* 阅读进度条 */
+#progressBar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  z-index: 50;
+  background: transparent;
+  transform-origin: 0 0;
+  transform: scaleX(0);
+  pointer-events: none;
+}
+#progressBar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, var(--accent));
+  box-shadow: 0 0 8px rgba(232, 198, 138, 0.7);
+}
+
+/* 音乐按钮（右上角） */
+#musicBtn {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--accent-soft);
+  border-radius: 999px;
+  background: rgba(13, 14, 19, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.8s ease 0.5s;
+}
+body.opened #musicBtn { opacity: 1; }
+#musicBtn .music-icon {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  position: relative;
+  transition: opacity 0.3s;
+}
+#musicBtn .music-icon::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.3rem;
+  height: 0.3rem;
+  margin: -0.15rem;
+  border-radius: 50%;
+  background: var(--accent);
+  transition: transform 0.3s ease;
+}
+#musicBtn.playing .music-icon::before { transform: scale(0.35); opacity: 0.4; }
+#musicBtn.playing .music-icon::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.02rem;
+  height: 0.02rem;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow:
+    -0.18rem -0.12rem 0 0.06rem var(--accent),
+     0.18rem -0.12rem 0 0.06rem var(--accent),
+    -0.18rem  0.12rem 0 0.06rem var(--accent),
+     0.18rem  0.12rem 0 0.06rem var(--accent);
+  animation: spin 1.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 底部歌词条 */
+#lyricBar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  padding: 0.8rem 1.2rem calc(0.8rem + env(safe-area-inset-bottom));
+  pointer-events: none;
+  background: linear-gradient(transparent, rgba(13, 14, 19, 0.85));
+}
+#lyricLine {
+  max-width: 30rem;
+  text-align: center;
+  font-size: 0.92rem;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.5s ease, transform 0.5s ease, color 0.5s ease;
+}
+#lyricLine.on { opacity: 1; transform: translateY(0); color: var(--accent); }
+
+/* ============ 正文排版 ============ */
+.hero {
+  text-align: center;
+  margin-bottom: 5rem;
+}
+.hero-eyebrow {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  letter-spacing: 0.5em;
+  text-indent: 0.5em;
+  margin-bottom: 1.6rem;
+}
+.hero-title {
+  font-size: clamp(1.9rem, 7.5vw, 2.8rem);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-indent: 0.16em;
+  color: var(--text);
+  line-height: 1.5;
+}
+.hero-greet {
+  margin-top: 1.4rem;
+  color: var(--accent);
+  font-size: 1.05rem;
+  letter-spacing: 0.2em;
+}
+.hero-line {
+  width: 3rem;
+  height: 1px;
+  margin: 2.4rem auto 0;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+
+.flow-section { margin-bottom: 4.6rem; }
+
+.section-head {
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  color: var(--accent);
+  margin-bottom: 1.4rem;
+}
+
+.paragraph {
+  font-size: 1.22rem;
+  line-height: 2.15;
+  letter-spacing: 0.06em;
+  margin-bottom: 1.6rem;
+  text-align: justify;
+}
+
+/* 歌词插页 */
+.lyric-card {
+  margin: 5rem 0;
+  padding: 2.6rem 1.4rem;
+  text-align: center;
+  border-top: 1px solid var(--accent-soft);
+  border-bottom: 1px solid var(--accent-soft);
+  background: rgba(232, 198, 138, 0.05);
+}
+.lyric-card-mark {
+  display: block;
+  color: var(--accent);
+  font-size: 1.3rem;
+  margin-bottom: 1.2rem;
+  animation: floaty 3.4s ease-in-out infinite;
+}
+.lyric-card p {
+  font-size: 1.18rem;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  line-height: 2.2;
+}
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+/* 落款 */
+.sign {
+  text-align: right;
+  margin-top: 5rem;
+  padding-top: 2.4rem;
+  border-top: 1px solid var(--accent-soft);
+  color: var(--text-dim);
+  font-size: 1rem;
+  letter-spacing: 0.18em;
+  line-height: 2.3;
+}
+.sign p:last-child { color: var(--accent); }
+
+/* ============ 滚动渐入 ============ */
+.reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  filter: blur(5px);
+  transition:
+    opacity 0.95s ease,
+    transform 0.95s ease,
+    filter 0.95s ease;
+}
+.reveal.in-view {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+.flow-section .section-head.reveal {
+  transition:
+    opacity 0.9s ease,
+    transform 0.9s ease,
+    filter 0.9s ease,
+    letter-spacing 0.9s ease;
+  letter-spacing: 0.45em;
+  text-indent: 0.45em;
+}
+.flow-section .section-head.reveal.in-view { letter-spacing: 0.3em; text-indent: 0.3em; }
+
+/* 禁用动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal { opacity: 1; transform: none; filter: none; }
+}
+
+/* 小屏微调 */
+@media (max-width: 480px) {
+  #essay { padding-top: 6.5rem; }
+  .paragraph { font-size: 1.16rem; }
+}
