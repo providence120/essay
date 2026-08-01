@@ -558,7 +558,7 @@
     }
     updateBtnZone();
 
-    /* 3 颗呼吸金五星：置于上方、小范围飘动、不越界、与背景融为一个图层 */
+    /* 5 颗呼吸金五星：置于上方、小范围飘动、不越界、与背景融为一个图层 */
     var stars = [];
     function newStar() {
       var bx = W / 2, by = H / 2;
@@ -584,7 +584,7 @@
         bnSp: 0.06                        /* 回弹速度/帧 */
       };
     }
-    for (var s = 0; s < 3; s++) stars.push(newStar());
+    for (var s = 0; s < 5; s++) stars.push(newStar());
 
     /* 流星（周期性划过，约每 2.3 秒起一道） */
     var meteors = [];
