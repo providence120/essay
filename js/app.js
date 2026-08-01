@@ -558,15 +558,33 @@
     }
     updateBtnZone();
 
-    /* 5 颗呼吸金五星：置于上方、小范围飘动、不越界、与背景融为一个图层 */
+    /* 星星边界：封面标题文字上沿，星星只在此之上分布、不越界 */
+    var bandTop = H * 0.06;
+    var bandBottom = H * 0.35;
+    function updateBoundary() {
+      var t = $('#coverTitle').getBoundingClientRect();
+      var c = canvas.getBoundingClientRect();
+      if (t && (t.width > 0 || t.height > 0)) {
+        bandBottom = (t.top - c.top) - 18;
+      }
+      if (bandBottom - bandTop < 40) bandBottom = bandTop + H * 0.2;
+    }
+    updateBoundary();
+
+    /* 5 颗呼吸金五星：横向均匀分布、错落两行、小范围飘动、不越界、与背景融为一个图层 */
     var stars = [];
-    function newStar() {
-      var bx = W / 2, by = H / 2;
-      for (var tries = 0; tries < 60; tries++) {
-        bx = 50 + Math.random() * (W - 100);
-        by = H * 0.06 + Math.random() * H * 0.3;      /* 上方区域 */
-        var dzx = bx - btnZone.x, dzy = by - btnZone.y;
-        if (dzx * dzx + dzy * dzy > btnZone.r * btnZone.r) break;
+    function newStar(i) {
+      /* 分 5 列横向均匀排布，带少量抖动避免呆板 */
+      var col = (i + 0.5) / 5;
+      var bx = Math.max(44, Math.min(W - 44, W * col + (Math.random() - 0.5) * W * 0.06));
+      /* 上下错落成两行，避免一条直线 */
+      var bandH = Math.max(20, bandBottom - bandTop);
+      var stagger = (i % 2 === 0) ? 0.24 : 0.55;
+      var by = bandTop + bandH * stagger * (0.72 + Math.random() * 0.28);
+      /* 避让按钮（安全兜底，正常不会碰到） */
+      var dzx = bx - btnZone.x, dzy = by - btnZone.y;
+      if (dzx * dzx + dzy * dzy < btnZone.r * btnZone.r) {
+        bx = bx < btnZone.x ? btnZone.x - btnZone.r - 20 : btnZone.x + btnZone.r + 20;
       }
       return {
         bx: bx, by: by,                   /* 基地位置 */
@@ -584,7 +602,7 @@
         bnSp: 0.06                        /* 回弹速度/帧 */
       };
     }
-    for (var s = 0; s < 5; s++) stars.push(newStar());
+    for (var s = 0; s < 5; s++) stars.push(newStar(s));
 
     /* 流星（周期性划过，约每 2.3 秒起一道） */
     var meteors = [];
@@ -655,7 +673,7 @@
           st.x = st.bx + Math.sin(t * st.f1 + st.p1) * st.A;
           st.y = st.by + Math.sin(t * st.f2 + st.p2) * st.A * 0.7;
           if (st.x < st.R) st.x = st.R; else if (st.x > W - st.R) st.x = W - st.R;
-          if (st.y < st.R) st.y = st.R; else if (st.y > H - st.R) st.y = H - st.R;
+          if (st.y < bandTop + st.R) st.y = bandTop + st.R; else if (st.y > bandBottom - st.R) st.y = bandBottom - st.R;
 
           /* 点击回弹：收缩到 0.25 再弹回 1（不消失、不换位） */
           var scale = 1;
@@ -793,6 +811,7 @@
       W = canvas.width = window.innerWidth;
       H = canvas.height = window.innerHeight;
       updateBtnZone();
+      updateBoundary();
     });
   }
 
