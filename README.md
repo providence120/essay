@@ -116,7 +116,11 @@ git push -u origin main
 
 ## 六、微信 / 抖音分享提示
 
-- **微信**：直接发链接即可，好友在微信内打开体验最好（建议点开后再关掉弹层）。
+**两个链接互为备份（都免费长期有效）：**
+- GitHub 主站：`https://providence120.github.io/essay/?id=shoubi`
+- Cloudflare 备用：`https://essay-mirror.pages.dev/?id=shoubi`
+
+- **微信**：直接发链接即可。若某天 GitHub 那个打不开（国内对 github.io 访问不稳定），改用 Cloudflare 备用链接。
 - **抖音**：抖音私信/聊天内默认限制打开外部链接，可先在浏览器打开，再"复制链接"发给对方；对方用浏览器打开即可。
 
 ## 目录结构
