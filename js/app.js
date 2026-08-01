@@ -546,25 +546,21 @@
       dust.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.1 + 0.3, ph: Math.random() * Math.PI * 2 });
     }
 
-    /* 可点击的白色五角星：闪着亮光、缓慢漂浮 */
+    /* 立体感白色五角星：静止悬挂，始终明亮可点；点击收缩-回弹（不消失）+ 迸发光粒 */
     var stars = [];
     function newStar() {
       return {
         x: Math.random() * W,
         y: Math.random() * H,
-        vx: (Math.random() - 0.5) * 0.15,
-        vy: (Math.random() - 0.5) * 0.15,
-        R: Math.random() * 7 + 8,           /* 外接半径 8~15，目标大、易点击 */
-        rot: Math.random() * Math.PI * 2,
-        rotSp: (Math.random() - 0.5) * 0.01,
-        tw: Math.random() * Math.PI * 2,    /* 闪烁相位 */
-        twSp: Math.random() * 0.8 + 0.7,    /* 闪烁速度 */
-        spark: Math.random() * Math.PI * 2, /* 星芒相位 */
-        sh: 1,
-        exploding: false
+        R: Math.random() * 7 + 9,           /* 外接半径 9~16，目标大、易点击 */
+        rot: Math.random() * Math.PI * 2,   /* 固定角度，静止悬挂 */
+        tw: Math.random() * Math.PI * 2,    /* 光晕呼吸相位 */
+        twSp: Math.random() * 0.6 + 0.4,    /* 呼吸速度 */
+        bn: 0,                              /* 点击回弹进度 0~1 */
+        bnSp: 0.055                         /* 回弹速度/帧 */
       };
     }
-    for (var s = 0; s < 14; s++) stars.push(newStar());
+    for (var s = 0; s < 16; s++) stars.push(newStar());
 
     var bursts = [];
 
@@ -584,33 +580,17 @@
       }
     }
 
-    function explodeStar(st) {
-      st.exploding = true;
-      st.sh = 1;
-      burst(st.x, st.y);
-    }
-
     /* 五角星路径（标准多边形算法） */
-    function starPath(c, x, y, spikes, outerR, innerR, rot) {
+    function starPath(c, x, y, outerR, innerR, rot) {
       c.beginPath();
-      for (var i = 0; i < spikes * 2; i++) {
+      for (var i = 0; i < 10; i++) {
         var r = (i % 2 === 0) ? outerR : innerR;
-        var a = rot + (i * Math.PI) / spikes;
+        var a = rot + (i * Math.PI) / 5;
         var px = x + Math.sin(a) * r;
         var py = y - Math.cos(a) * r;
         if (i === 0) c.moveTo(px, py); else c.lineTo(px, py);
       }
       c.closePath();
-    }
-
-    /* 十字星芒闪光 */
-    function drawFlare(c, x, y, len, a) {
-      c.strokeStyle = rg(WHITE, a * 0.5);
-      c.lineWidth = 1;
-      c.beginPath();
-      c.moveTo(x - len, y); c.lineTo(x + len, y);
-      c.moveTo(x, y - len); c.lineTo(x, y + len);
-      c.stroke();
     }
 
     var raf = null;
@@ -631,48 +611,58 @@
 
       if (!document.body.classList.contains('opened')) {
         stars.forEach(function (st) {
-          /* 收缩动画 */
-          if (st.exploding) {
-            st.sh -= 0.06;
-            if (st.sh <= 0) {
-              var ns = newStar();
-              st.x = ns.x; st.y = ns.y; st.vx = ns.vx; st.vy = ns.vy;
-              st.R = ns.R; st.rot = ns.rot; st.rotSp = ns.rotSp;
-              st.tw = ns.tw; st.twSp = ns.twSp; st.spark = ns.spark;
-              st.sh = 1; st.exploding = false;
-            }
-            return;
+          /* 点击回弹：收缩到 0.25 再弹回 1（不消失、不换位） */
+          var scale = 1;
+          if (st.bn > 0) {
+            st.bn += st.bnSp;
+            if (st.bn >= 1) st.bn = 0;
+            scale = 1 - 0.75 * Math.sin(Math.PI * Math.min(st.bn, 1));
           }
+          var outer = st.R * scale;
+          if (outer < 0.6) return;
 
-          st.x += st.vx;
-          st.y += st.vy;
-          st.rot += st.rotSp;
-          if (st.x < -30) st.x = W + 30; else if (st.x > W + 30) st.x = -30;
-          if (st.y < -30) st.y = H + 30; else if (st.y > H + 30) st.y = -30;
+          /* 光晕呼吸：只动光晕，星体始终明亮 */
+          var halo = 0.12 + 0.11 * (0.5 + 0.5 * Math.sin(t * st.twSp + st.tw));
 
-          var bright = 0.55 + 0.45 * Math.sin(t * st.twSp + st.tw); /* 0.1 ~ 1 */
-          var outer = st.R * st.sh;
-          if (outer < 0.4) return;
-
-          /* 白色光晕 */
-          var g = ctx.createRadialGradient(st.x, st.y, 0, st.x, st.y, outer * 4);
-          g.addColorStop(0, rg(WHITE, 0.22 * bright));
+          /* 柔光晕 */
+          var g = ctx.createRadialGradient(st.x, st.y, 0, st.x, st.y, outer * 4.5);
+          g.addColorStop(0, rg(WHITE, halo));
           g.addColorStop(1, rg(WHITE, 0));
           ctx.fillStyle = g;
           ctx.beginPath();
-          ctx.arc(st.x, st.y, outer * 4, 0, Math.PI * 2);
+          ctx.arc(st.x, st.y, outer * 4.5, 0, Math.PI * 2);
           ctx.fill();
 
-          /* 五角星本体 */
-          starPath(ctx, st.x, st.y, 5, outer, outer * 0.45, st.rot);
-          ctx.fillStyle = rg(WHITE, 0.35 + 0.65 * bright);
+          /* 投影：下方偏移的暗色星，制造悬浮立体感 */
+          starPath(ctx, st.x + outer * 0.14, st.y + outer * 0.2, outer, outer * 0.45, st.rot);
+          ctx.fillStyle = 'rgba(8, 12, 22, 0.42)';
           ctx.fill();
 
-          /* 星芒闪光（周期性闪烁） */
-          var flash = Math.sin(t * 2.4 + st.spark);
-          if (flash > 0.1) {
-            drawFlare(ctx, st.x, st.y, outer * (1.5 + flash), flash * bright);
-          }
+          /* 3D 星体：左上光源的渐变填充 */
+          starPath(ctx, st.x, st.y, outer, outer * 0.45, st.rot);
+          var lg = ctx.createLinearGradient(st.x - outer, st.y - outer, st.x + outer, st.y + outer);
+          lg.addColorStop(0, '#ffffff');
+          lg.addColorStop(0.55, 'rgba(255,255,255,0.96)');
+          lg.addColorStop(1, 'rgba(188,203,235,0.88)');
+          ctx.fillStyle = lg;
+          ctx.fill();
+
+          /* 描边提亮边缘 */
+          ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          /* 高光点：左上镜面反光 */
+          var hx = st.x - outer * 0.3;
+          var hy = st.y - outer * 0.34;
+          var hr = outer * 0.2;
+          var hg = ctx.createRadialGradient(hx, hy, 0, hx, hy, hr * 2);
+          hg.addColorStop(0, 'rgba(255,255,255,0.9)');
+          hg.addColorStop(1, 'rgba(255,255,255,0)');
+          ctx.fillStyle = hg;
+          ctx.beginPath();
+          ctx.arc(hx, hy, hr * 2, 0, Math.PI * 2);
+          ctx.fill();
         });
       }
 
@@ -707,11 +697,12 @@
       var py = e.clientY - rect.top;
       for (var i = stars.length - 1; i >= 0; i--) {
         var st = stars[i];
-        if (st.exploding) continue;
-        var hit = st.R * 2.2;               /* 命中范围放大，好点 */
+        if (st.bn > 0) continue;
+        var hit = st.R * 2.4;               /* 命中范围放大，好点 */
         var dx = st.x - px, dy = st.y - py;
         if (dx * dx + dy * dy < hit * hit) {
-          explodeStar(st);
+          st.bn = 0.0001;                   /* 开始收缩-回弹 */
+          burst(st.x, st.y);                /* 迸发光粒 */
           return;
         }
       }
