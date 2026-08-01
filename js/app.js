@@ -216,16 +216,27 @@
     lyricTimer: null,
     timeListener: null,
 
-    start: function () {
+    /* 页面加载即预加载音频，进入时立即出声 */
+    preload: function () {
+      if (this.audio) return;
       var music = CFG.music;
-      var audio = new Audio(music.src);
-      audio.loop = music.loop !== false;
-      audio.volume = music.volume != null ? music.volume : 0.6;
-      audio.preload = 'auto';
+      var a = new Audio(music.src);
+      a.preload = 'auto';
+      a.loop = music.loop !== false;
+      a.volume = music.volume != null ? music.volume : 0.6;
+      a.load();
+      this.audio = a;
+    },
 
+    start: function () {
       var self = this;
+      var audio = this.audio;
+      if (!audio) { this.preload(); audio = this.audio; }
+      if (!audio) return;
+
       var fallbackTimer = setTimeout(function () {
-        if (!self.audio && !self.usingSynth) self.useSynth();
+        if (!self.usingSynth && self.audio && !self.audio.paused) return; /* 已在播 */
+        if (!self.usingSynth) self.useSynth();
       }, 4000);
 
       audio.addEventListener('canplaythrough', function () {
@@ -234,12 +245,16 @@
       });
       audio.addEventListener('error', function () {
         clearTimeout(fallbackTimer);
-        audio.src = '';
         self.useSynth();
       });
 
-      this.audio = audio;
-      safePlay(audio);
+      /* 已预加载完成则直接播放 */
+      if (audio.readyState >= 3) {
+        clearTimeout(fallbackTimer);
+        this.useAudio(audio);
+      } else {
+        safePlay(audio);
+      }
     },
 
     useAudio: function (audio) {
@@ -828,6 +843,7 @@
     initProgress();
     bindCover();
     bindMusic();
+    if (!pickerMode) Music.preload();   /* 提前预加载，进入即响 */
     initParticles();
     initCoverFX();
   }
