@@ -55,3 +55,4 @@ cd interactive-essay && npx http-server -c-1 -p 8080
 - 2026-08-01：裁掉《again》开头约 3.75 秒静音/极弱前奏（MPEG 帧级裁剪，保持原音质）；页面加载即预加载音频，进入瞬间出声。
 - 2026-08-01：底部歌词改为"彩蛋"——仅用户手动开关音乐后才轮播显示。
 - 2026-08-01：新增 **Cloudflare Pages 镜像站** `https://essay-mirror.pages.dev/`（免费、长期有效），与 GitHub Pages 互为备份，微信打不开时换用。
+- 2026-08-01：**新增随笔插图功能**：`essays.js` 的小节支持 `image: {src, alt, caption}`，渲染在该小节段落后（圆角/描边/阴影/随滚动渐入）。当前在"倒数第三段"（换个角度去看…）后插入 `assets/images/photo-1.jpg`（原图 3215x1534，压缩至宽 1280、43KB）。

@@ -144,6 +144,14 @@
         html += '<p class="paragraph reveal">' + esc(p) + '</p>';
       });
       html += '</div>';
+      if (sec.image && sec.image.src) {
+        html += '<figure class="essay-figure reveal">';
+        html += '<img src="' + esc(sec.image.src) + '" alt="' + esc(sec.image.alt || '') + '" loading="lazy" />';
+        if (sec.image.caption) {
+          html += '<figcaption>' + esc(sec.image.caption) + '</figcaption>';
+        }
+        html += '</figure>';
+      }
       html += '</section>';
     });
 
