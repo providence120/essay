@@ -74,21 +74,21 @@ npx http-server -c-1 -p 8080
 
 ## 五、部署到 GitHub Pages（分享用）
 
-**方式 0：一键自动部署（推荐，无需懂 GitHub）**
+**方式 0：双击一键发布（已配置好，最省事）**
 
-1. 注册 GitHub：`github.com/signup`（邮箱 + 密码 + 验证邮件）。
-2. 拿"钥匙"：登录后右上角头像 → `Settings` → 左下角 `Developer settings` → `Personal access tokens` → `Tokens (classic)` → `Generate new token (classic)`，勾选 `repo`，点生成并复制 `ghp_...`。
-3. 在终端运行（或把 token 交给 AI 代跑）：
+已经完成 git 初始化并关联远程仓库，以后更新内容只需：
 
-```bash
-$env:GH_TOKEN = "ghp_你的token"
-node scripts/deploy.js essay     # 最后一个参数是仓库名，可改成你喜欢的
-```
+1. 确保本机代理已开启（当前 git 走 `127.0.0.1:7897`，改代理端口需在项目里执行 `git config http.proxy http://127.0.0.1:新端口`）。
+2. **双击 `deploy.bat`** → 自动 `git add / commit / push` → 等 1~2 分钟生效。
 
-4. 等 1~2 分钟，脚本会输出 `https://<你的用户名>.github.io/essay/`，发到微信即可。
-5. 部署完成后可到 `Settings → Developer settings → Personal access tokens` 删掉 token。
+> 安全性提示：推送用的 token 保存在本地 `interactive-essay/.git/config` 里（明文）。建议：
+> - 每次发布完，到 GitHub `Settings → Developer settings → Personal access tokens` 删除该 token；
+> - 下次要发布时重新生成一个再更新 `git remote set-url origin https://新token@github.com/你的用户名/essay.git`。
+> 删除 token 前远程 URL 里的旧 token 也会失效，所以更新前先换掉 URL。
 
-**方式 A：GitHub 网页上传（无需命令行）**
+**方式 1：网页上传（备用）**
+
+
 1. 新建仓库 → `Add file → Upload files`，把 `interactive-essay/` 整个目录的内容传上去。
 2. 仓库 `Settings → Pages → Source: Deploy from a branch → main / (root)` → Save。
 3. 等 1~2 分钟，即可用 `https://<你的用户名>.github.io/<仓库名>/` 访问。
@@ -118,7 +118,9 @@ interactive-essay/
 ├── css/style.css           # 全部样式（配色变量在 :root）
 ├── js/config.js            # ★ 唯一要改的配置（正文/音乐/歌词/主题）
 ├── js/app.js               # 引擎：渲染/动画/音乐/歌词/进度
+├── deploy.bat              # ★ 双击即发布到 GitHub Pages
 ├── scripts/build-fonts.js  # 换文后重建字体的脚本（可选）
+├── scripts/deploy.js       # 备用：github.com 直连不通时用 API 发布
 ├── assets/fonts/           # 霞鹜文楷子集（2 个 woff2 + css + OFL 授权）
 ├── assets/audio/again.mp3  # 背景音乐（王极《again》）
 └── docs/dev-log.md         # 开发日志

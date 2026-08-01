@@ -80,6 +80,18 @@
 - 源 TTF 未入库（部署不携带 48MB 源字库），OFL 授权文件保留以符合开源协议。
 - 校验：新 woff2 magic 为 `wOF2`；全部资源 200；配置驱动冒烟测试 8 项通过。
 
+## 4.7 git 自动化发布（2026-08-01）
+
+- **起因**：用户希望"补装 git 实现自动化"。
+- **安装**：`winget install Git.Git` → git 2.55.0；初始化本地仓库，`user.name=providence120`。
+- **网络坑（重要）**：`github.com:443` 直连被重置/超时（GFW），但 `api.github.com` 直连可用——最初 API 部署成功正因如此。
+  本机存在代理 `127.0.0.1:7897`（Clash 类），配置 `git config http.proxy http://127.0.0.1:7897` 后
+  `git push -u origin main --force` 成功（`main -> main (forced update)`）。
+  **结论：该网络下 git 发布必须开代理；`deploy.bat` 已依赖此代理。**
+- **发布自动化**：`deploy.bat`（`git add -A && git commit && git push origin main`），双击即发布，等 1~2 分钟生效。
+- **安全提示**：token 明文保存在 `.git/config` 的远程 URL 中；建议发布后删除 token、再次发布前换新并更新 remote URL（README 已写明）。
+- **现状**：站点 `https://providence120.github.io/essay/` 已上线并验证（200 + 标题正确）；git 与 API 两条发布通道并存，网络直连 github.com 不通时用 `scripts/deploy.js`（走 api.github.com）。
+
 ## 5. 遗留问题与已知限制
 
 1. **音乐版权**：王极《again》为商业版权歌曲，已内置本地 mp3；公网分享需自行确认版权合规。
