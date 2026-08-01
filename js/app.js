@@ -211,6 +211,7 @@
     ctx: null,            // AudioContext（合成模式）
     synthGain: null,      // 合成主音量
     paused: false,        // 合成模式暂停标记
+    userPlayed: false,    // 是否被用户手动点过音乐按钮（彩蛋：歌词仅手动开关后才轮播）
     fakeTime: 0,          // 合成模式累计播放时长（ms）
     fakeBase: 0,          // 合成模式本次播放起点（performance.now）
     lyricTimer: null,
@@ -265,7 +266,7 @@
       var self = this;
       audio.addEventListener('play', function () {
         self._updateIcon();
-        self._startLyricSync();
+        if (self.userPlayed) self._startLyricSync();   /* 彩蛋：仅手动开关后才显示歌词 */
       });
       audio.addEventListener('pause', function () {
         self._updateIcon();
@@ -320,11 +321,12 @@
       this.paused = false;
       this.fakeBase = performance.now();
       musicBadge.textContent = CFG.music.title + ' · ' + CFG.music.artist + '（试听）';
-      this._startLyricCycle();
+      if (this.userPlayed) this._startLyricCycle();   /* 彩蛋：仅手动开关后显示歌词 */
       this._updateIcon();
     },
 
     toggle: function () {
+      this.userPlayed = true;   /* 用户手动操作过音乐按钮 */
       if (this.usingSynth) {
         if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
         if (this.paused) {
