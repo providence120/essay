@@ -2,3 +2,4 @@
 node_modules/
 assets/fonts/_source/
 scripts/.deploy-token
+.wrangler/
