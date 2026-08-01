@@ -540,24 +540,47 @@
     var WHITE = [255, 255, 255];
     var rg = function (rgb, a) { return 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + a.toFixed(3) + ')'; };
 
-    /* 背景碎星：极淡的白色小点，呼吸闪烁 */
+    /* 背景碎星：极淡的金色小点，呼吸闪烁 */
     var dust = [];
-    for (var i = 0; i < 20; i++) {
+    for (var i = 0; i < 22; i++) {
       dust.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.1 + 0.3, ph: Math.random() * Math.PI * 2 });
     }
 
-    /* 立体感白色五角星：静止悬挂，始终明亮可点；点击收缩-回弹（不消失）+ 迸发光粒 */
+    /* 立体感金色五角星：基地位置 + 小范围飘动，始终明亮可点；点击收缩-回弹（不消失）+ 迸发光粒 */
+    /* 避开"轻触 开启"按钮的脉冲波动范围，避免冲突 */
+    var btnZone = { x: W / 2, y: H / 2, r: 140 };
+    function updateBtnZone() {
+      var b = coverBtn.getBoundingClientRect();
+      if (!b || (b.width === 0 && b.height === 0)) return;
+      btnZone.x = b.left + b.width / 2;
+      btnZone.y = b.top + b.height / 2;
+      btnZone.r = Math.max(b.width, b.height) / 2 * 1.25 + 22;
+    }
+    updateBtnZone();
+
     var stars = [];
     function newStar() {
+      var bx = W / 2, by = H / 2;
+      for (var tries = 0; tries < 30; tries++) {
+        bx = 44 + Math.random() * (W - 88);
+        by = 64 + Math.random() * (H - 128);
+        var dzx = bx - btnZone.x, dzy = by - btnZone.y;
+        if (dzx * dzx + dzy * dzy > btnZone.r * btnZone.r) break;
+      }
       return {
-        x: Math.random() * W,
-        y: Math.random() * H,
-        R: Math.random() * 7 + 9,           /* 外接半径 9~16，目标大、易点击 */
-        rot: Math.random() * Math.PI * 2,   /* 固定角度，静止悬挂 */
-        tw: Math.random() * Math.PI * 2,    /* 光晕呼吸相位 */
-        twSp: Math.random() * 0.6 + 0.4,    /* 呼吸速度 */
-        bn: 0,                              /* 点击回弹进度 0~1 */
-        bnSp: 0.055                         /* 回弹速度/帧 */
+        bx: bx, by: by,                   /* 基地位置 */
+        A: Math.random() * 15 + 8,        /* 飘动幅度 8~23 */
+        f1: 0.2 + Math.random() * 0.3,    /* 水平飘速 */
+        f2: 0.2 + Math.random() * 0.3,    /* 垂直飘速 */
+        p1: Math.random() * Math.PI * 2,  /* 相位 */
+        p2: Math.random() * Math.PI * 2,
+        x: bx, y: by,
+        R: Math.random() * 6 + 9,         /* 外接半径 9~15，目标大、易点击 */
+        rot: Math.random() * Math.PI * 2, /* 固定角度 */
+        tw: Math.random() * Math.PI * 2,  /* 光晕呼吸相位 */
+        twSp: Math.random() * 0.6 + 0.4,  /* 呼吸速度 */
+        bn: 0,                            /* 点击回弹进度 0~1 */
+        bnSp: 0.055                       /* 回弹速度/帧 */
       };
     }
     for (var s = 0; s < 16; s++) stars.push(newStar());
@@ -605,12 +628,16 @@
         var tw = 0.5 + 0.5 * Math.sin(t * 0.9 + d.ph);
         ctx.beginPath();
         ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-        ctx.fillStyle = rg(WHITE, 0.22 * tw + 0.05);
+        ctx.fillStyle = rg(gold, 0.22 * tw + 0.05);
         ctx.fill();
       });
 
       if (!document.body.classList.contains('opened')) {
         stars.forEach(function (st) {
+          /* 小范围飘动：围绕基地位置浮动，保留移动动画 */
+          st.x = st.bx + Math.sin(t * st.f1 + st.p1) * st.A;
+          st.y = st.by + Math.sin(t * st.f2 + st.p2) * st.A * 0.7;
+
           /* 点击回弹：收缩到 0.25 再弹回 1（不消失、不换位） */
           var scale = 1;
           if (st.bn > 0) {
@@ -624,10 +651,10 @@
           /* 光晕呼吸：只动光晕，星体始终明亮 */
           var halo = 0.12 + 0.11 * (0.5 + 0.5 * Math.sin(t * st.twSp + st.tw));
 
-          /* 柔光晕 */
+          /* 柔光晕（金色） */
           var g = ctx.createRadialGradient(st.x, st.y, 0, st.x, st.y, outer * 4.5);
-          g.addColorStop(0, rg(WHITE, halo));
-          g.addColorStop(1, rg(WHITE, 0));
+          g.addColorStop(0, rg(gold, halo));
+          g.addColorStop(1, rg(gold, 0));
           ctx.fillStyle = g;
           ctx.beginPath();
           ctx.arc(st.x, st.y, outer * 4.5, 0, Math.PI * 2);
@@ -638,27 +665,27 @@
           ctx.fillStyle = 'rgba(8, 12, 22, 0.42)';
           ctx.fill();
 
-          /* 3D 星体：左上光源的渐变填充 */
+          /* 边缘柔化：稍大的低透明金色星（替代硬描边，凸显立体感） */
+          starPath(ctx, st.x, st.y, outer * 1.1, outer * 1.1 * 0.45, st.rot);
+          ctx.fillStyle = rg(gold, 0.16);
+          ctx.fill();
+
+          /* 3D 星体：金色、左上光源的渐变填充 */
           starPath(ctx, st.x, st.y, outer, outer * 0.45, st.rot);
           var lg = ctx.createLinearGradient(st.x - outer, st.y - outer, st.x + outer, st.y + outer);
-          lg.addColorStop(0, '#ffffff');
-          lg.addColorStop(0.55, 'rgba(255,255,255,0.96)');
-          lg.addColorStop(1, 'rgba(188,203,235,0.88)');
+          lg.addColorStop(0, '#fff6dc');
+          lg.addColorStop(0.5, 'rgba(240,208,137,0.98)');
+          lg.addColorStop(1, 'rgba(198,160,96,0.92)');
           ctx.fillStyle = lg;
           ctx.fill();
 
-          /* 描边提亮边缘 */
-          ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-          ctx.lineWidth = 1;
-          ctx.stroke();
-
-          /* 高光点：左上镜面反光 */
+          /* 高光点：左上暖白镜面反光 */
           var hx = st.x - outer * 0.3;
           var hy = st.y - outer * 0.34;
           var hr = outer * 0.2;
           var hg = ctx.createRadialGradient(hx, hy, 0, hx, hy, hr * 2);
-          hg.addColorStop(0, 'rgba(255,255,255,0.9)');
-          hg.addColorStop(1, 'rgba(255,255,255,0)');
+          hg.addColorStop(0, 'rgba(255,248,230,0.9)');
+          hg.addColorStop(1, 'rgba(255,248,230,0)');
           ctx.fillStyle = hg;
           ctx.beginPath();
           ctx.arc(hx, hy, hr * 2, 0, Math.PI * 2);
@@ -711,6 +738,7 @@
     window.addEventListener('resize', function () {
       W = canvas.width = window.innerWidth;
       H = canvas.height = window.innerHeight;
+      updateBtnZone();
     });
   }
 
