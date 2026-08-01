@@ -60,7 +60,7 @@ body::before {
   align-items: center;
   justify-content: center;
   text-align: center;
-  cursor: pointer;
+  cursor: default;
   background:
     radial-gradient(70% 55% at 50% 38%, rgba(232, 198, 138, 0.10), transparent 68%),
     linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
@@ -238,29 +238,32 @@ body.opened #stage {
   transition: opacity 0.8s ease 0.5s;
 }
 body.opened #musicBtn { opacity: 1; }
-/* 音符跳动图标（三根音柱，播放时跳动） */
+/* 音符跳动图标（三根音柱，播放时跳动；暂停时静止且变暗） */
 #musicBtn .music-icon {
   display: inline-flex;
   align-items: flex-end;
-  gap: 2px;
-  width: 14px;
-  height: 14px;
+  gap: 2.5px;
+  width: 17px;
+  height: 16px;
 }
 #musicBtn .music-icon i {
   display: block;
-  width: 3px;
+  width: 3.5px;
   border-radius: 2px;
   background: var(--accent);
   height: 5px;
   transform-origin: bottom;
-  transition: height 0.3s ease;
+  opacity: 0.55;
+  transition: height 0.3s ease, opacity 0.3s ease;
 }
+#musicBtn.playing .music-icon i { opacity: 1; }
+#musicBtn.playing { box-shadow: 0 0 16px rgba(232, 198, 138, 0.4); }
 #musicBtn.playing .music-icon i:nth-child(1) { animation: eq-a .7s ease-in-out infinite alternate; }
 #musicBtn.playing .music-icon i:nth-child(2) { animation: eq-b .55s ease-in-out infinite alternate; }
 #musicBtn.playing .music-icon i:nth-child(3) { animation: eq-c .8s ease-in-out infinite alternate; }
-@keyframes eq-a { from { height: 5px;  } to { height: 13px; } }
-@keyframes eq-b { from { height: 12px; } to { height: 4px;  } }
-@keyframes eq-c { from { height: 7px;  } to { height: 14px; } }
+@keyframes eq-a { from { height: 5px;  } to { height: 15px; } }
+@keyframes eq-b { from { height: 14px; } to { height: 3px;  } }
+@keyframes eq-c { from { height: 8px;  } to { height: 16px; } }
 
 /* 底部歌词条 */
 #lyricBar {
