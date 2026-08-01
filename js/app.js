@@ -478,12 +478,12 @@
 
     /* 大光晕：缓慢漂移的柔光，制造纵深与沉浸感 */
     var orbs = [];
-    for (var o = 0; o < 7; o++) {
+    for (var o = 0; o < 4; o++) {
       orbs.push({
         x: Math.random() * W,
         y: Math.random() * H,
-        r: 60 + Math.random() * 90,
-        a: 0.018 + Math.random() * 0.03,
+        r: 70 + Math.random() * 90,
+        a: 0.014 + Math.random() * 0.022,
         vy: Math.random() * 0.05 + 0.01,
         ph: Math.random() * Math.PI * 2
       });
@@ -536,54 +536,50 @@
     var theme = CFG ? (CFG.theme || DEFAULT_THEME) : DEFAULT_THEME;
     var hex = (theme.accent || '#e8c68a').replace('#', '');
     var num = parseInt(hex, 16);
-    var rgb = [(num >> 16) & 255, (num >> 8) & 255, num & 255];
-    var c1 = 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',';
+    var gold = [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+    var WHITE = [255, 255, 255];
+    var rg = function (rgb, a) { return 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + a.toFixed(3) + ')'; };
 
-    /* 背景星尘：呼吸闪烁，不可点 */
+    /* 背景碎星：极淡的白色小点，呼吸闪烁 */
     var dust = [];
-    for (var i = 0; i < 46; i++) {
-      dust.push({
-        x: Math.random() * W,
-        y: Math.random() * H,
-        r: Math.random() * 1.1 + 0.3,
-        a: Math.random() * 0.4 + 0.15,
-        ph: Math.random() * Math.PI * 2
-      });
+    for (var i = 0; i < 20; i++) {
+      dust.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.1 + 0.3, ph: Math.random() * Math.PI * 2 });
     }
 
-    /* 可点击的彗星：自带尾迹滑动；点击后收缩消失 + 迸发光粒，再重生 */
+    /* 可点击的白色五角星：闪着亮光、缓慢漂浮 */
     var stars = [];
     function newStar() {
-      var ang = Math.random() * Math.PI * 2;
-      var sp = Math.random() * 0.5 + 0.25;
       return {
         x: Math.random() * W,
         y: Math.random() * H,
-        vx: Math.cos(ang) * sp,
-        vy: Math.sin(ang) * sp,
-        r: Math.random() * 1.8 + 1.6,
-        a: Math.random() * 0.55 + 0.35,
-        ph: Math.random() * Math.PI * 2,
-        trail: [],
+        vx: (Math.random() - 0.5) * 0.15,
+        vy: (Math.random() - 0.5) * 0.15,
+        R: Math.random() * 7 + 8,           /* 外接半径 8~15，目标大、易点击 */
+        rot: Math.random() * Math.PI * 2,
+        rotSp: (Math.random() - 0.5) * 0.01,
+        tw: Math.random() * Math.PI * 2,    /* 闪烁相位 */
+        twSp: Math.random() * 0.8 + 0.7,    /* 闪烁速度 */
+        spark: Math.random() * Math.PI * 2, /* 星芒相位 */
         sh: 1,
         exploding: false
       };
     }
-    for (var s = 0; s < 55; s++) stars.push(newStar());
+    for (var s = 0; s < 14; s++) stars.push(newStar());
 
     var bursts = [];
 
     function burst(x, y) {
-      for (var i = 0; i < 22; i++) {
+      for (var i = 0; i < 26; i++) {
         var ang = Math.random() * Math.PI * 2;
-        var sp = Math.random() * 4.2 + 0.8;
+        var sp = Math.random() * 4.4 + 0.9;
         bursts.push({
           x: x, y: y,
           vx: Math.cos(ang) * sp,
-          vy: Math.sin(ang) * sp - 0.6,
+          vy: Math.sin(ang) * sp - 0.5,
           r: Math.random() * 2 + 0.8,
+          white: Math.random() < 0.72,
           life: 1,
-          decay: Math.random() * 0.016 + 0.009
+          decay: Math.random() * 0.017 + 0.009
         });
       }
     }
@@ -594,16 +590,42 @@
       burst(st.x, st.y);
     }
 
+    /* 五角星路径（标准多边形算法） */
+    function starPath(c, x, y, spikes, outerR, innerR, rot) {
+      c.beginPath();
+      for (var i = 0; i < spikes * 2; i++) {
+        var r = (i % 2 === 0) ? outerR : innerR;
+        var a = rot + (i * Math.PI) / spikes;
+        var px = x + Math.sin(a) * r;
+        var py = y - Math.cos(a) * r;
+        if (i === 0) c.moveTo(px, py); else c.lineTo(px, py);
+      }
+      c.closePath();
+    }
+
+    /* 十字星芒闪光 */
+    function drawFlare(c, x, y, len, a) {
+      c.strokeStyle = rg(WHITE, a * 0.5);
+      c.lineWidth = 1;
+      c.beginPath();
+      c.moveTo(x - len, y); c.lineTo(x + len, y);
+      c.moveTo(x, y - len); c.lineTo(x, y + len);
+      c.stroke();
+    }
+
+    var raf = null;
+    var stopAt = 0;
+
     function draw() {
       ctx.clearRect(0, 0, W, H);
       var t = performance.now() * 0.001;
 
-      /* 背景星尘 */
+      /* 背景碎星 */
       dust.forEach(function (d) {
-        var tw = 0.55 + 0.45 * Math.sin(t * 0.8 + d.ph);
+        var tw = 0.5 + 0.5 * Math.sin(t * 0.9 + d.ph);
         ctx.beginPath();
         ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-        ctx.fillStyle = c1 + (d.a * tw).toFixed(3) + ')';
+        ctx.fillStyle = rg(WHITE, 0.22 * tw + 0.05);
         ctx.fill();
       });
 
@@ -611,55 +633,45 @@
         stars.forEach(function (st) {
           /* 收缩动画 */
           if (st.exploding) {
-            st.sh -= 0.08;
+            st.sh -= 0.06;
             if (st.sh <= 0) {
               var ns = newStar();
-              ns.x = st.x; ns.y = st.y; /* 就近重生，不跳帧 */
-              st.x = ns.x; st.y = ns.y;
-              st.vx = ns.vx; st.vy = ns.vy;
-              st.r = ns.r; st.a = ns.a; st.ph = ns.ph;
-              st.trail.length = 0;
-              st.sh = 1;
-              st.exploding = false;
+              st.x = ns.x; st.y = ns.y; st.vx = ns.vx; st.vy = ns.vy;
+              st.R = ns.R; st.rot = ns.rot; st.rotSp = ns.rotSp;
+              st.tw = ns.tw; st.twSp = ns.twSp; st.spark = ns.spark;
+              st.sh = 1; st.exploding = false;
             }
             return;
           }
 
           st.x += st.vx;
           st.y += st.vy;
-          if (st.x < -20) st.x = W + 20; else if (st.x > W + 20) st.x = -20;
-          if (st.y < -20) st.y = H + 20; else if (st.y > H + 20) st.y = -20;
-          st.trail.push({ x: st.x, y: st.y });
-          if (st.trail.length > 10) st.trail.shift();
+          st.rot += st.rotSp;
+          if (st.x < -30) st.x = W + 30; else if (st.x > W + 30) st.x = -30;
+          if (st.y < -30) st.y = H + 30; else if (st.y > H + 30) st.y = -30;
 
-          /* 尾迹（渐隐拖尾） */
-          for (var k = 1; k < st.trail.length; k++) {
-            var ta = st.a * 0.5 * (k / st.trail.length);
-            ctx.beginPath();
-            ctx.moveTo(st.trail[k - 1].x, st.trail[k - 1].y);
-            ctx.lineTo(st.trail[k].x, st.trail[k].y);
-            ctx.strokeStyle = c1 + ta.toFixed(3) + ')';
-            ctx.lineWidth = st.r * 0.7;
-            ctx.lineCap = 'round';
-            ctx.stroke();
-          }
+          var bright = 0.55 + 0.45 * Math.sin(t * st.twSp + st.tw); /* 0.1 ~ 1 */
+          var outer = st.R * st.sh;
+          if (outer < 0.4) return;
 
-          /* 星点本体（呼吸） + 星芒光晕 */
-          var tw = 0.65 + 0.35 * Math.sin(t * 1.2 + st.ph);
-          var rad = st.r * st.sh;
-          if (rad > 0.2) {
-            var g = ctx.createRadialGradient(st.x, st.y, 0, st.x, st.y, rad * 5);
-            g.addColorStop(0, c1 + (st.a * tw * 0.28).toFixed(3) + ')');
-            g.addColorStop(1, c1 + '0)');
-            ctx.fillStyle = g;
-            ctx.beginPath();
-            ctx.arc(st.x, st.y, rad * 5, 0, Math.PI * 2);
-            ctx.fill();
+          /* 白色光晕 */
+          var g = ctx.createRadialGradient(st.x, st.y, 0, st.x, st.y, outer * 4);
+          g.addColorStop(0, rg(WHITE, 0.22 * bright));
+          g.addColorStop(1, rg(WHITE, 0));
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(st.x, st.y, outer * 4, 0, Math.PI * 2);
+          ctx.fill();
 
-            ctx.beginPath();
-            ctx.arc(st.x, st.y, rad, 0, Math.PI * 2);
-            ctx.fillStyle = c1 + (st.a * tw).toFixed(3) + ')';
-            ctx.fill();
+          /* 五角星本体 */
+          starPath(ctx, st.x, st.y, 5, outer, outer * 0.45, st.rot);
+          ctx.fillStyle = rg(WHITE, 0.35 + 0.65 * bright);
+          ctx.fill();
+
+          /* 星芒闪光（周期性闪烁） */
+          var flash = Math.sin(t * 2.4 + st.spark);
+          if (flash > 0.1) {
+            drawFlare(ctx, st.x, st.y, outer * (1.5 + flash), flash * bright);
           }
         });
       }
@@ -673,15 +685,20 @@
         if (p.life > 0) {
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-          ctx.fillStyle = c1 + (p.life * 0.9).toFixed(3) + ')';
+          ctx.fillStyle = rg(p.white ? WHITE : gold, p.life * 0.92);
           ctx.fill();
         }
       });
       bursts = bursts.filter(function (p) { return p.life > 0; });
 
-      requestAnimationFrame(draw);
+      /* 进入页面后保留短暂效果，随后停止循环（省电，避免持续重绘） */
+      if (document.body.classList.contains('opened')) {
+        if (stopAt === 0) stopAt = performance.now() + 1400;
+        if (performance.now() > stopAt) { raf = null; return; }
+      }
+      raf = requestAnimationFrame(draw);
     }
-    draw();
+    raf = requestAnimationFrame(draw);
 
     cover.addEventListener('pointerdown', function (e) {
       if (e.target && e.target.closest && e.target.closest('.cover-inner')) return;
@@ -691,8 +708,9 @@
       for (var i = stars.length - 1; i >= 0; i--) {
         var st = stars[i];
         if (st.exploding) continue;
+        var hit = st.R * 2.2;               /* 命中范围放大，好点 */
         var dx = st.x - px, dy = st.y - py;
-        if (dx * dx + dy * dy < 24 * 24) {
+        if (dx * dx + dy * dy < hit * hit) {
           explodeStar(st);
           return;
         }

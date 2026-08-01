@@ -20,7 +20,7 @@ html { -webkit-text-size-adjust: 100%; }
 body {
   font-family: var(--font);
   color: var(--text);
-  background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom) 70%) fixed;
+  background-color: var(--bg-top);
   line-height: 2;
   letter-spacing: 0.04em;
   overflow-x: hidden;
@@ -31,24 +31,29 @@ body {
 
 ::selection { background: var(--accent-soft); color: var(--accent); }
 
-/* 背景光晕 */
+/* 背景：固定伪元素层（不使用 background-attachment: fixed，规避移动端滚动闪烁） */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -2;
   background:
+    linear-gradient(180deg, var(--bg-top), var(--bg-bottom) 70%),
     radial-gradient(60% 45% at 50% 0%, rgba(232, 198, 138, 0.10), transparent 70%),
     radial-gradient(45% 35% at 85% 90%, rgba(120, 140, 190, 0.08), transparent 70%);
   pointer-events: none;
 }
 
-/* 粒子画布 */
+/* 粒子画布（display:block + 独立图层提升，避免滚动/合成时的闪烁线） */
 #particles {
   position: fixed;
   inset: 0;
   z-index: -1;
+  display: block;
   pointer-events: none;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 /* ============ 封面（缓冲/开启） ============ */
@@ -81,7 +86,10 @@ body::before {
   width: 100%;
   height: 100%;
   z-index: 0;
+  display: block;
   pointer-events: none;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 @keyframes coverIn {
