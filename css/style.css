@@ -458,12 +458,6 @@ body.egg-open #backBtn {
   text-shadow: 0 0 30px rgba(232, 198, 138, 0.35);
   white-space: nowrap;
 }
-.egg-sub {
-  margin-top: 1.2rem;
-  font-size: 0.88rem;
-  color: var(--text-dim);
-  letter-spacing: 0.18em;
-}
 @media (max-width: 720px) {
   .egg-inner { flex-direction: column; gap: 1.2rem; }
   .egg-stage { height: 46vh; }
