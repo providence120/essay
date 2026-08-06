@@ -70,6 +70,7 @@
   var lyricLine = $('#lyricLine');
   var particlesCanvas = $('#particles');
   var backBtn = $('#backBtn');
+  var coverFX = { restart: null };   /* 封面特效的恢复入口（返回封面时重启） */
 
   /* ---------------- 主题 -> CSS 变量 ---------------- */
   function applyTheme(theme) {
@@ -527,6 +528,7 @@
     if (window.scrollTo) window.scrollTo(0, 0);
     hideBack();
     document.body.classList.remove('opened');
+    if (coverFX.restart) coverFX.restart();   /* 恢复星星/流星动画 */
   }
 
   /* 正文返回选择页（换读其他篇） */
@@ -785,6 +787,7 @@
 
     var raf = null;
     var stopAt = 0;
+    var wasOpen = false;
 
     function draw() {
       var now = performance.now();
@@ -826,7 +829,7 @@
           if (outer < 0.6) return;
 
           /* 整星呼吸亮度 */
-          var breathe = 0.55 + 0.45 * Math.sin(t * st.twSp + st.tw);   /* 0.1~1 */
+          var breathe = 0.7 + 0.3 * Math.sin(t * st.twSp + st.tw);   /* 0.4~1，最低亮度提升 */
 
           /* 柔光晕（随呼吸） */
           var g = ctx.createRadialGradient(st.x, st.y, 0, st.x, st.y, outer * 4);
@@ -920,14 +923,24 @@
 
       ctx.globalAlpha = 1;
 
-      /* 进入页面后保留短暂效果，随后停止循环（省电，避免持续重绘） */
-      if (document.body.classList.contains('opened')) {
-        if (stopAt === 0) stopAt = now + 1400;
+      /* 进入页面后保留短暂效果，随后停止循环（省电）；返回封面时由 startCoverFX 恢复 */
+      var isOpen = document.body.classList.contains('opened');
+      if (isOpen) {
+        if (!wasOpen) stopAt = now + 1400;   /* 仅"刚进入"时开始计时 */
         if (now > stopAt) { raf = null; return; }
       }
+      wasOpen = isOpen;
+      raf = requestAnimationFrame(draw);
+    }
+    /* 恢复封面动画（从选择页/正文返回封面时调用） */
+    function startCoverFX() {
+      if (raf) return;
+      stopAt = 0;
+      wasOpen = document.body.classList.contains('opened');
       raf = requestAnimationFrame(draw);
     }
     raf = requestAnimationFrame(draw);
+    coverFX.restart = startCoverFX;
 
     cover.addEventListener('pointerdown', function (e) {
       if (e.target && e.target.closest && e.target.closest('.cover-inner')) return;
