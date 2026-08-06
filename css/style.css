@@ -492,10 +492,20 @@ body.picker-mode #lyricBar { display: none; }
   transform: translateY(-2px);
 }
 .essay-item-title {
-  display: block;
+  display: inline-block;
   font-size: 1.15rem;
   letter-spacing: 0.12em;
   color: var(--accent);
+}
+.essay-item-idx {
+  display: inline-block;
+  min-width: 2.2em;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  letter-spacing: 0.12em;
+  margin-right: 0.6rem;
+  vertical-align: 0.08em;
+  opacity: 0.8;
 }
 .essay-item-desc {
   display: block;

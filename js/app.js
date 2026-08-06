@@ -103,13 +103,15 @@
     document.title = m.pageTitle || m.coverTitle || '';
   }
 
-  /* ---------------- 目录页（多篇时） ---------------- */
-  function renderPicker() {
+  /* ---------------- 选择页（进入后先选一篇） ---------------- */
+  function renderSelect() {
     var html = '<div class="essay-list">';
     html += '<h2 class="essay-list-title">随笔集</h2>';
-    html += '<p class="essay-list-sub">点击进入任意一篇</p>';
-    ESSAYS.forEach(function (e) {
-      html += '<a class="essay-item reveal" href="?id=' + encodeURIComponent(e.id) + '">';
+    html += '<p class="essay-list-sub">选择一篇，慢慢读</p>';
+    ESSAYS.forEach(function (e, i) {
+      var idx = ('0' + (i + 1)).slice(-2);
+      html += '<a class="essay-item select-card" href="?id=' + encodeURIComponent(e.id) + '" data-id="' + esc(e.id) + '">';
+      html += '<span class="essay-item-idx">' + idx + '</span>';
       html += '<span class="essay-item-title">' + esc(e.listTitle || e.id) + '</span>';
       if (e.listDesc) html += '<span class="essay-item-desc">' + esc(e.listDesc) + '</span>';
       html += '<span class="essay-item-arrow">→</span>';
@@ -119,9 +121,56 @@
     essayRoot.innerHTML = html;
   }
 
+  /* 点击选择卡片 → 平滑进入该随笔 */
+  function bindSelectCards() {
+    essayRoot.addEventListener('click', function (e) {
+      var card = e.target && e.target.closest ? e.target.closest('.select-card') : null;
+      if (!card) return;
+      e.preventDefault();
+      openEssay(card.getAttribute('data-id'));
+    });
+  }
+
+  function openEssay(id) {
+    var e = ESSAYS.filter(function (x) { return x.id === id; })[0];
+    if (!e || !pickerMode) return;
+    if (window.history && history.replaceState) {
+      history.replaceState(null, '', '?id=' + encodeURIComponent(id));
+    }
+    selected = e;
+    CFG = e;
+    pickerMode = false;
+    document.body.classList.remove('picker-mode');
+
+    function enter() {
+      applyMeta();
+      applyTheme(CFG.theme);
+      renderEssay();
+      initReveal();
+      Music.reset();
+      Music.start();
+      Music.markPlaying();
+      setTimeout(function () { $('#musicBadge').textContent = CFG.music.title || 'music'; }, 0);
+    }
+
+    if (window.gsap && !reduceMotion) {
+      gsap.to(essayRoot, {
+        opacity: 0, y: 14, duration: 0.32, ease: 'power2.in',
+        onComplete: function () {
+          enter();
+          gsap.fromTo(essayRoot, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.55, ease: 'power2.out' });
+          var hero = essayRoot.querySelector('.hero');
+          if (hero) gsap.from(hero.children, { opacity: 0, y: 22, duration: 0.5, stagger: 0.12, ease: 'power2.out', delay: 0.15 });
+        }
+      });
+    } else {
+      enter();
+    }
+  }
+
   /* ---------------- 渲染正文 ---------------- */
   function renderEssay() {
-    if (pickerMode) { renderPicker(); return; }
+    if (pickerMode) { renderSelect(); bindSelectCards(); return; }
     var essay = CFG.essay;
     var html = '';
 
@@ -237,6 +286,22 @@
       this.audio = a;
     },
 
+    /* 切换随笔前重置音乐状态 */
+    reset: function () {
+      if (this.audio) {
+        try { this.audio.pause(); } catch (e) {}
+        try { this.audio.removeAttribute('src'); } catch (e) {}
+        this.audio = null;
+      }
+      if (this.ctx) { try { this.ctx.close(); } catch (e) {} }
+      this.ctx = null;
+      this.synthGain = null;
+      this.usingSynth = false;
+      this.paused = false;
+      this._stopLyricSync();
+      this._stopLyricCycle();
+    },
+
     start: function () {
       var self = this;
       var audio = this.audio;
@@ -270,7 +335,7 @@
       this._stopSynth();
       this.audio = audio;
       this.usingSynth = false;
-      musicBadge.textContent = CFG.music.title + ' · ' + CFG.music.artist;
+      musicBadge.textContent = CFG.music.artist ? (CFG.music.title + ' · ' + CFG.music.artist) : CFG.music.title;
       var self = this;
       audio.addEventListener('play', function () {
         self._updateIcon();
@@ -328,7 +393,7 @@
 
       this.paused = false;
       this.fakeBase = performance.now();
-      musicBadge.textContent = CFG.music.title + ' · ' + CFG.music.artist + '（试听）';
+      musicBadge.textContent = (CFG.music.artist ? (CFG.music.title + ' · ' + CFG.music.artist) : CFG.music.title) + '（试听）';
       if (this.userPlayed) this._startLyricCycle();   /* 彩蛋：仅手动开关后显示歌词 */
       this._updateIcon();
     },
@@ -448,7 +513,13 @@
   function openPage() {
     if (document.body.classList.contains('opened')) return;
     document.body.classList.add('opened');
-    if (!pickerMode) {
+    if (pickerMode) {
+      /* 选择页：卡片错落入场，不播音乐 */
+      if (window.gsap && !reduceMotion) {
+        gsap.fromTo('.select-card', { opacity: 0, y: 34 }, { opacity: 1, y: 0, duration: 0.8, stagger: 0.14, ease: 'power3.out', delay: 0.15 });
+        gsap.from('.essay-list-title, .essay-list-sub', { opacity: 0, y: 18, duration: 0.6, stagger: 0.1, ease: 'power2.out', delay: 0.05 });
+      }
+    } else {
       Music.start();
       Music.markPlaying();
       setTimeout(function () { $('#musicBadge').textContent = CFG.music.title || 'music'; }, 0);
@@ -847,8 +918,12 @@
       return;
     }
     applyMeta();
-    if (pickerMode) document.body.classList.add('picker-mode');
-    else applyTheme(CFG.theme);
+    if (pickerMode) {
+      document.body.classList.add('picker-mode');
+      applyTheme(ESSAYS[0] ? ESSAYS[0].theme : DEFAULT_THEME);   /* 选择页用首篇主题作背景 */
+    } else {
+      applyTheme(CFG.theme);
+    }
     renderEssay();
     initProgress();
     bindCover();
