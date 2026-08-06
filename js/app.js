@@ -964,6 +964,7 @@
         if (dx * dx + dy * dy < hit * hit) {
           st.bn = 0.0001;                   /* 开始收缩-回弹 */
           burst(st.x, st.y);                /* 迸发光粒 */
+          coverStarClicked(i);              /* 彩蛋序列检测 */
           return;
         }
       }
@@ -975,6 +976,83 @@
       updateBtnZone();
       updateBoundary();
     });
+  }
+
+  /* ================ 彩蛋：亚克力相框 ================ */
+  /* 触发：5 颗星从左到右，依次点击第 2、2、4 颗 */
+  var EGG_SEQ = [1, 1, 3];
+  var eggPos = 0;
+
+  function coverStarClicked(i) {
+    if (i === EGG_SEQ[eggPos]) {
+      eggPos++;
+      if (eggPos >= EGG_SEQ.length) {
+        eggPos = 0;
+        showEgg();
+      }
+    } else {
+      eggPos = (i === EGG_SEQ[0]) ? 1 : 0;
+    }
+  }
+
+  var egg = $('#egg');
+  var eggPolaroid = $('#eggPolaroid');
+  var eggClose = $('#eggClose');
+
+  var eggRotX = 0, eggRotY = 0.45, eggTargetX = 0, eggTargetY = 0.45;
+  var eggDragging = false, eggDragStartX = 0, eggDragStartY = 0, eggStartRX = 0, eggStartRY = 0;
+  var eggRAF = null;
+
+  function applyEggTransform() {
+    if (!eggPolaroid) return;
+    eggPolaroid.style.transform = 'rotateX(' + eggRotX.toFixed(4) + 'rad) rotateY(' + eggRotY.toFixed(4) + 'rad)';
+  }
+
+  function eggLoop() {
+    eggRotX += (eggTargetX - eggRotX) * 0.1;
+    eggRotY += (eggTargetY - eggRotY) * 0.1;
+    if (!eggDragging) eggTargetY += 0.008;   /* 空闲缓慢自转 */
+    applyEggTransform();
+    eggRAF = requestAnimationFrame(eggLoop);
+  }
+  function startEggSpin() { if (!eggRAF) eggRAF = requestAnimationFrame(eggLoop); }
+  function stopEggSpin() { if (eggRAF) { cancelAnimationFrame(eggRAF); eggRAF = null; } }
+
+  function bindEgg() {
+    if (!eggPolaroid) return;
+    eggPolaroid.addEventListener('pointerdown', function (e) {
+      eggDragging = true;
+      eggDragStartX = e.clientX; eggDragStartY = e.clientY;
+      eggStartRX = eggTargetX; eggStartRY = eggTargetY;
+    });
+    window.addEventListener('pointermove', function (e) {
+      if (!eggDragging) return;
+      var dx = e.clientX - eggDragStartX;
+      var dy = e.clientY - eggDragStartY;
+      eggTargetY = eggStartRY + dx * 0.008;
+      eggTargetX = Math.max(-0.5, Math.min(0.5, eggStartRX + dy * 0.008));
+    });
+    function endDrag() { eggDragging = false; }
+    window.addEventListener('pointerup', endDrag);
+    window.addEventListener('pointercancel', endDrag);
+  }
+
+  function showEgg() {
+    if (!egg) return;
+    egg.classList.add('show');
+    egg.setAttribute('aria-hidden', 'false');
+    if (window.gsap && !reduceMotion) {
+      gsap.fromTo(eggPolaroid, { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out' });
+      gsap.fromTo('.egg-line, .egg-sub', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.8, stagger: 0.15, ease: 'power2.out', delay: 0.25 });
+    }
+    startEggSpin();
+  }
+
+  function hideEgg() {
+    if (!egg) return;
+    egg.classList.remove('show');
+    egg.setAttribute('aria-hidden', 'true');
+    stopEggSpin();
   }
 
   /* ---------------- 启动 ---------------- */
@@ -995,6 +1073,8 @@
     bindCover();
     bindMusic();
     bindBack();
+    bindEgg();
+    if (eggClose) eggClose.addEventListener('click', hideEgg);
     if (!pickerMode) Music.preload();   /* 提前预加载，进入即响 */
     initParticles();
     initCoverFX();
@@ -1004,5 +1084,15 @@
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
+  }
+
+  /* 测试钩子（仅 ?test=1 时暴露） */
+  if (params.get('test') === '1') {
+    window.__test = {
+      coverStarClicked: coverStarClicked,
+      showEgg: showEgg,
+      hideEgg: hideEgg,
+      EGG_SEQ: EGG_SEQ.slice()
+    };
   }
 })();

@@ -398,6 +398,132 @@ body.opened #musicBtn { opacity: 1; }
   50%      { transform: translateY(-6px); }
 }
 
+/* ============ 彩蛋页：亚克力相框 ============ */
+.egg-page {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(60% 45% at 50% 0%, rgba(232, 198, 138, 0.10), transparent 70%),
+    linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+.egg-page.show {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+.egg-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(2rem, 6vw, 5rem);
+  flex-wrap: wrap;
+  padding: 2rem;
+}
+.egg-stage {
+  perspective: 1400px;
+  width: clamp(230px, 58vw, 330px);
+  height: clamp(300px, 70vh, 430px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.egg-polaroid {
+  position: relative;
+  width: 100%;
+  max-width: 310px;
+  transform-style: preserve-3d;
+  border-radius: 18px;
+  padding: 14px 14px 56px 14px;
+  background: rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12) inset,
+    0 25px 50px -12px rgba(0, 0, 0, 0.6),
+    0 0 40px rgba(255, 255, 255, 0.08);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.egg-polaroid:active { cursor: grabbing; }
+.egg-polaroid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  padding: 1.5px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.8) 0%,
+    rgba(255, 255, 255, 0.1) 30%,
+    rgba(255, 255, 255, 0) 50%,
+    rgba(255, 255, 255, 0.1) 70%,
+    rgba(255, 255, 255, 0.6) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.egg-photo {
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.egg-photo img {
+  width: 100%;
+  display: block;
+  pointer-events: none;
+}
+.egg-reflection {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: calc(100% + 2px);
+  border-radius: 12px;
+  overflow: hidden;
+  opacity: 0.16;
+  transform: scaleY(-1);
+  pointer-events: none;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%);
+}
+.egg-reflection img {
+  width: 100%;
+  display: block;
+}
+.egg-text {
+  text-align: center;
+}
+.egg-line {
+  font-size: clamp(1.5rem, 4vw, 2.3rem);
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+  color: var(--accent);
+  text-shadow: 0 0 30px rgba(232, 198, 138, 0.35);
+  white-space: nowrap;
+}
+.egg-sub {
+  margin-top: 1.2rem;
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  letter-spacing: 0.18em;
+}
+@media (max-width: 720px) {
+  .egg-inner { flex-direction: column; gap: 1.2rem; }
+  .egg-stage { height: 46vh; }
+}
+
 /* 落款 */
 .sign {
   text-align: right;
