@@ -229,7 +229,7 @@ window.ESSAYS = [
   {
     id: 'boycat',
     listTitle: '男孩和猫',
-    listDesc: 'Healing Growth',
+    listDesc: 'Healing Thrive',
 
     meta: {
       pageTitle: '男孩和猫',
