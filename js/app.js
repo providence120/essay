@@ -110,6 +110,7 @@
   function renderSelect() {
     var html = '<div class="essay-list">';
     html += '<h2 class="essay-list-title">随笔集</h2>';
+    html += '<div class="essay-list-cards">';
     ESSAYS.forEach(function (e) {
       html += '<a class="essay-item select-card" href="?id=' + encodeURIComponent(e.id) + '" data-id="' + esc(e.id) + '">';
       html += '<span class="essay-item-title">' + esc(e.listTitle || e.id) + '</span>';
@@ -118,7 +119,15 @@
       html += '</a>';
     });
     html += '</div>';
+    html += '<p class="essay-list-hint" id="listHint">&#9660; 下滑查看更多</p>';
+    html += '</div>';
     essayRoot.innerHTML = html;
+    /* 篇目溢出时才显示下滑提示 */
+    var cards = $('.essay-list-cards');
+    var hint = $('#listHint');
+    if (cards && hint) {
+      hint.style.display = (cards.scrollHeight > cards.clientHeight) ? 'block' : 'none';
+    }
   }
 
   /* 点击选择卡片 → 平滑进入该随笔 */
