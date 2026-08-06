@@ -41,7 +41,7 @@
       clearcoat: 0.35,
       clearcoatRoughness: 0.35,
       transparent: true,
-      opacity: 0.14,
+      opacity: 0.2,
       depthWrite: false,
       side: THREE.DoubleSide,
       envMapIntensity: 1
@@ -180,7 +180,7 @@
   function bindDragRotation() {
     if (!canvas || !albumGroup) return;
     var isDragging = false, sx = 0, sy = 0, srX = 0, srY = 0;
-    var targetRX = 0.08, targetRY = -0.3, curRX = 0.08, curRY = -0.3;
+    var targetRX = 0, targetRY = 0, curRX = 0, curRY = 0;
 
     canvas.addEventListener('mousedown', function (e) {
       if (!isActive || !isReady) return;
@@ -236,6 +236,7 @@
     camera.position.set(0, 0, 9);
 
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setClearColor(0x000000, 0);   /* 透明清屏：背面不再发黑，透出站点背景 */
     renderer.setSize(w, h);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -270,8 +271,8 @@
       scene.add(albumGroup);
       albumGroup.add(createAlbumFrame(width, height));
       albumGroup.add(createPhotoPlanes(width, height, img));
-      albumGroup.rotation.y = -0.3;
-      albumGroup.rotation.x = 0.08;
+      albumGroup.rotation.y = 0;   /* 进入时正面朝向 */
+      albumGroup.rotation.x = 0;
       isReady = true;
       bindDragRotation();
     };
