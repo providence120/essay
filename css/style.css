@@ -515,17 +515,20 @@ body.picker-mode #lyricBar { display: none; }
   color: var(--text-dim);
   letter-spacing: 0.08em;
 }
-/* 融入式进入箭头：无圆圈包裹，柔和发光 */
+/* 融入式进入箭头：与返回箭头同一套样式，仅方向相反 */
 .essay-item-arrow {
   position: absolute;
   right: 1.3rem;
   top: 50%;
   transform: translateY(-50%);
   color: var(--accent);
-  font-size: 1.1rem;
-  opacity: 0.55;
-  text-shadow: 0 0 8px rgba(232, 198, 138, 0.35);
+  font-size: 1.35rem;
+  line-height: 1;
+  opacity: 0.7;
+  filter: blur(0.3px);
+  text-shadow: 0 0 10px rgba(232, 198, 138, 0.45), 0 0 3px rgba(232, 198, 138, 0.4);
   transition: opacity 0.3s ease, transform 0.3s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 .essay-item:hover .essay-item-arrow {
   opacity: 1;
