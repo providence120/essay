@@ -86,10 +86,11 @@
   /* ---------------- 封面信息 ---------------- */
   function applyMeta() {
     if (pickerMode) {
+      /* 选择页封面为固定文案：增删随笔都不变 */
       $('#coverEyebrow').textContent = '随笔集';
       $('#coverTitle').textContent = '我的随笔';
-      $('#coverSubtitle').textContent = '一篇一篇，慢慢写';
-      $('#coverBtn').textContent = '看看';
+      $('#coverSubtitle').textContent = '未来可期';
+      $('#coverBtn').textContent = '轻触 开启';
       $('#coverTip').textContent = '';
       document.title = '随笔集';
       return;
@@ -105,9 +106,9 @@
 
   /* ---------------- 选择页（进入后先选一篇） ---------------- */
   function renderSelect() {
-    var html = '<div class="essay-list">';
+    var html = '<button class="back-arrow" id="backArrow" type="button" aria-label="返回封面">&#8592;</button>';
+    html += '<div class="essay-list">';
     html += '<h2 class="essay-list-title">随笔集</h2>';
-    html += '<p class="essay-list-sub">选择一篇，慢慢读</p>';
     ESSAYS.forEach(function (e, i) {
       var idx = ('0' + (i + 1)).slice(-2);
       html += '<a class="essay-item select-card" href="?id=' + encodeURIComponent(e.id) + '" data-id="' + esc(e.id) + '">';
@@ -119,6 +120,8 @@
     });
     html += '</div>';
     essayRoot.innerHTML = html;
+    var back = $('#backArrow');
+    if (back) back.addEventListener('click', backToCover);
   }
 
   /* 点击选择卡片 → 平滑进入该随笔 */
@@ -510,6 +513,12 @@
   };
 
   /* ---------------- 5. 封面 -> 开启 ---------------- */
+  /* 选择页返回封面 */
+  function backToCover() {
+    if (window.scrollTo) window.scrollTo(0, 0);
+    document.body.classList.remove('opened');
+  }
+
   function openPage() {
     if (document.body.classList.contains('opened')) return;
     document.body.classList.add('opened');
@@ -517,7 +526,8 @@
       /* 选择页：卡片错落入场，不播音乐 */
       if (window.gsap && !reduceMotion) {
         gsap.fromTo('.select-card', { opacity: 0, y: 34 }, { opacity: 1, y: 0, duration: 0.8, stagger: 0.14, ease: 'power3.out', delay: 0.15 });
-        gsap.from('.essay-list-title, .essay-list-sub', { opacity: 0, y: 18, duration: 0.6, stagger: 0.1, ease: 'power2.out', delay: 0.05 });
+        gsap.from('.essay-list-title', { opacity: 0, y: 18, duration: 0.6, ease: 'power2.out', delay: 0.05 });
+        gsap.from('#backArrow', { opacity: 0, x: -10, duration: 0.5, ease: 'power2.out', delay: 0.1 });
       }
     } else {
       Music.start();

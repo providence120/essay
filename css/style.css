@@ -475,10 +475,11 @@ body.picker-mode #lyricBar { display: none; }
   margin-bottom: 3rem;
 }
 .essay-item {
+  position: relative;
   display: block;
   text-align: left;
   margin: 1.1rem 0;
-  padding: 1.3rem 1.4rem;
+  padding: 1.3rem 3.6rem 1.3rem 1.4rem;
   border: 1px solid var(--accent-soft);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.02);
@@ -514,8 +515,50 @@ body.picker-mode #lyricBar { display: none; }
   color: var(--text-dim);
   letter-spacing: 0.08em;
 }
+/* 圆润进入箭头（与返回箭头同款） */
 .essay-item-arrow {
-  float: right;
-  color: var(--text-dim);
-  margin-top: -1.2rem;
+  position: absolute;
+  right: 1.1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  line-height: 30px;
+  text-align: center;
+  border-radius: 50%;
+  border: 1px solid var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.95rem;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+.essay-item:hover .essay-item-arrow {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+/* 选择页返回箭头（左上角圆润） */
+.back-arrow {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 55;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--accent-soft);
+  background: rgba(13, 14, 19, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--accent);
+  font-size: 1.05rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+.back-arrow:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
 }

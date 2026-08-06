@@ -104,7 +104,7 @@ window.ESSAYS = [
   {
     id: 'ye',
     listTitle: '夜',
-    listDesc: '关于夜晚与旅程',
+    listDesc: 'Nightly Voyage',
 
     meta: {
       pageTitle: '夜',
@@ -124,7 +124,6 @@ window.ESSAYS = [
       {
         heading: '',
         paragraphs: [
-        '夜',
         '提笔凝眸，墨滞难开头。这几天天气阴晴多变，又起了思绪，一边复习科目一边惯性思考。放假计划着去北京找姐姐，听说暑假工是夜班保安(咳咳，插入一条，已经跑路了)，良久注意到这夜，想到夜晚承载着无数记忆时光。夜静悄悄，随笔随着夜一同铺开。'
         ]
       },
