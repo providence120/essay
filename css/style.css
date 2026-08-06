@@ -398,7 +398,7 @@ body.opened #musicBtn { opacity: 1; }
   50%      { transform: translateY(-6px); }
 }
 
-/* ============ 彩蛋页：亚克力相框 ============ */
+/* ============ 彩蛋页：3D 亚克力相册 ============ */
 .egg-page {
   position: fixed;
   inset: 0;
@@ -406,18 +406,23 @@ body.opened #musicBtn { opacity: 1; }
   display: flex;
   align-items: center;
   justify-content: center;
-  background:
-    radial-gradient(60% 45% at 50% 0%, rgba(232, 198, 138, 0.10), transparent 70%),
-    linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+  background: transparent;   /* 透出站点背景与粒子 */
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: opacity 0.6s ease, visibility 0.6s ease;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
 }
 .egg-page.show {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
+}
+body.egg-open #cover,
+body.egg-open #musicBtn,
+body.egg-open #lyricBar,
+body.egg-open #backBtn {
+  opacity: 0;
+  visibility: hidden;
 }
 .egg-inner {
   display: flex;
@@ -428,78 +433,18 @@ body.opened #musicBtn { opacity: 1; }
   padding: 2rem;
 }
 .egg-stage {
-  perspective: 1400px;
-  width: clamp(230px, 58vw, 330px);
-  height: clamp(300px, 70vh, 430px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
+  width: clamp(240px, 52vw, 440px);
+  height: clamp(320px, 68vh, 500px);
 }
-.egg-polaroid {
+.egg-canvas-wrap {
   position: relative;
   width: 100%;
-  max-width: 310px;
-  transform-style: preserve-3d;
-  border-radius: 18px;
-  padding: 14px 14px 56px 14px;
-  background: rgba(255, 255, 255, 0.10);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.12) inset,
-    0 25px 50px -12px rgba(0, 0, 0, 0.6),
-    0 0 40px rgba(255, 255, 255, 0.08);
-  cursor: grab;
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
+  height: 100%;
 }
-.egg-polaroid:active { cursor: grabbing; }
-.egg-polaroid::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 18px;
-  padding: 1.5px;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.8) 0%,
-    rgba(255, 255, 255, 0.1) 30%,
-    rgba(255, 255, 255, 0) 50%,
-    rgba(255, 255, 255, 0.1) 70%,
-    rgba(255, 255, 255, 0.6) 100%
-  );
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-.egg-photo {
-  width: 100%;
-  border-radius: 8px;
-  overflow: hidden;
-}
-.egg-photo img {
-  width: 100%;
-  display: block;
-  pointer-events: none;
-}
-.egg-reflection {
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  top: calc(100% + 2px);
-  border-radius: 12px;
-  overflow: hidden;
-  opacity: 0.16;
-  transform: scaleY(-1);
-  pointer-events: none;
-  mask-image: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%);
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%);
-}
-.egg-reflection img {
-  width: 100%;
+.egg-canvas-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
   display: block;
 }
 .egg-text {

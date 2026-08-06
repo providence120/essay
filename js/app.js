@@ -996,63 +996,30 @@
   }
 
   var egg = $('#egg');
-  var eggPolaroid = $('#eggPolaroid');
   var eggClose = $('#eggClose');
-
-  var eggRotX = 0, eggRotY = 0.45, eggTargetX = 0, eggTargetY = 0.45;
-  var eggDragging = false, eggDragStartX = 0, eggDragStartY = 0, eggStartRX = 0, eggStartRY = 0;
-  var eggRAF = null;
-
-  function applyEggTransform() {
-    if (!eggPolaroid) return;
-    eggPolaroid.style.transform = 'rotateX(' + eggRotX.toFixed(4) + 'rad) rotateY(' + eggRotY.toFixed(4) + 'rad)';
-  }
-
-  function eggLoop() {
-    eggRotX += (eggTargetX - eggRotX) * 0.1;
-    eggRotY += (eggTargetY - eggRotY) * 0.1;
-    if (!eggDragging) eggTargetY += 0.008;   /* 空闲缓慢自转 */
-    applyEggTransform();
-    eggRAF = requestAnimationFrame(eggLoop);
-  }
-  function startEggSpin() { if (!eggRAF) eggRAF = requestAnimationFrame(eggLoop); }
-  function stopEggSpin() { if (eggRAF) { cancelAnimationFrame(eggRAF); eggRAF = null; } }
-
-  function bindEgg() {
-    if (!eggPolaroid) return;
-    eggPolaroid.addEventListener('pointerdown', function (e) {
-      eggDragging = true;
-      eggDragStartX = e.clientX; eggDragStartY = e.clientY;
-      eggStartRX = eggTargetX; eggStartRY = eggTargetY;
-    });
-    window.addEventListener('pointermove', function (e) {
-      if (!eggDragging) return;
-      var dx = e.clientX - eggDragStartX;
-      var dy = e.clientY - eggDragStartY;
-      eggTargetY = eggStartRY + dx * 0.008;
-      eggTargetX = Math.max(-0.5, Math.min(0.5, eggStartRX + dy * 0.008));
-    });
-    function endDrag() { eggDragging = false; }
-    window.addEventListener('pointerup', endDrag);
-    window.addEventListener('pointercancel', endDrag);
-  }
+  var eggInited = false;
 
   function showEgg() {
     if (!egg) return;
     egg.classList.add('show');
+    document.body.classList.add('egg-open');
     egg.setAttribute('aria-hidden', 'false');
+    if (!eggInited && window.Egg3D) {
+      Egg3D.init('eggCanvasWrap', 'assets/images/egg-photo.jpg');
+      eggInited = true;
+    }
+    if (window.Egg3D) Egg3D.setActive(true);
     if (window.gsap && !reduceMotion) {
-      gsap.fromTo(eggPolaroid, { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out' });
       gsap.fromTo('.egg-line, .egg-sub', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.8, stagger: 0.15, ease: 'power2.out', delay: 0.25 });
     }
-    startEggSpin();
   }
 
   function hideEgg() {
     if (!egg) return;
     egg.classList.remove('show');
+    document.body.classList.remove('egg-open');
     egg.setAttribute('aria-hidden', 'true');
-    stopEggSpin();
+    if (window.Egg3D) Egg3D.setActive(false);
   }
 
   /* ---------------- 启动 ---------------- */
@@ -1073,7 +1040,6 @@
     bindCover();
     bindMusic();
     bindBack();
-    bindEgg();
     if (eggClose) eggClose.addEventListener('click', hideEgg);
     if (!pickerMode) Music.preload();   /* 提前预加载，进入即响 */
     initParticles();
