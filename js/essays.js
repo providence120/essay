@@ -79,7 +79,7 @@ window.ESSAYS = [
 
     music: {
       title: 'again',
-      artist: '王极',
+      artist: '',
       src: 'assets/audio/again.mp3',
       loop: true,
       volume: 0.6,
