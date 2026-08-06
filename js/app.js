@@ -69,6 +69,7 @@
   var musicBadge = $('#musicBadge');
   var lyricLine = $('#lyricLine');
   var particlesCanvas = $('#particles');
+  var backBtn = $('#backBtn');
 
   /* ---------------- 主题 -> CSS 变量 ---------------- */
   function applyTheme(theme) {
@@ -106,13 +107,10 @@
 
   /* ---------------- 选择页（进入后先选一篇） ---------------- */
   function renderSelect() {
-    var html = '<button class="back-arrow" id="backArrow" type="button" aria-label="返回封面">&#8592;</button>';
-    html += '<div class="essay-list">';
+    var html = '<div class="essay-list">';
     html += '<h2 class="essay-list-title">随笔集</h2>';
-    ESSAYS.forEach(function (e, i) {
-      var idx = ('0' + (i + 1)).slice(-2);
+    ESSAYS.forEach(function (e) {
       html += '<a class="essay-item select-card" href="?id=' + encodeURIComponent(e.id) + '" data-id="' + esc(e.id) + '">';
-      html += '<span class="essay-item-idx">' + idx + '</span>';
       html += '<span class="essay-item-title">' + esc(e.listTitle || e.id) + '</span>';
       if (e.listDesc) html += '<span class="essay-item-desc">' + esc(e.listDesc) + '</span>';
       html += '<span class="essay-item-arrow">→</span>';
@@ -120,8 +118,6 @@
     });
     html += '</div>';
     essayRoot.innerHTML = html;
-    var back = $('#backArrow');
-    if (back) back.addEventListener('click', backToCover);
   }
 
   /* 点击选择卡片 → 平滑进入该随笔 */
@@ -154,6 +150,7 @@
       Music.start();
       Music.markPlaying();
       setTimeout(function () { $('#musicBadge').textContent = CFG.music.title || 'music'; }, 0);
+      setBack(backToSelect);   /* 正文内可返回选择页读其他篇 */
     }
 
     if (window.gsap && !reduceMotion) {
@@ -513,10 +510,45 @@
   };
 
   /* ---------------- 5. 封面 -> 开启 ---------------- */
+  /* 返回箭头控制（选择页/正文共用，圆润融入） */
+  function setBack(fn) {
+    if (!backBtn) return;
+    backBtn.style.display = 'block';
+    backBtn._action = fn;
+  }
+  function hideBack() {
+    if (!backBtn) return;
+    backBtn.style.display = 'none';
+    backBtn._action = null;
+  }
+
   /* 选择页返回封面 */
   function backToCover() {
     if (window.scrollTo) window.scrollTo(0, 0);
+    hideBack();
     document.body.classList.remove('opened');
+  }
+
+  /* 正文返回选择页（换读其他篇） */
+  function backToSelect() {
+    if (window.scrollTo) window.scrollTo(0, 0);
+    if (window.history && history.replaceState) history.replaceState(null, '', location.pathname);
+    pickerMode = true;
+    document.body.classList.add('picker-mode');
+    Music.reset();
+    applyMeta();
+    renderEssay();
+    setBack(backToCover);
+    if (window.gsap && !reduceMotion) {
+      gsap.fromTo('.select-card', { opacity: 0, y: 34 }, { opacity: 1, y: 0, duration: 0.8, stagger: 0.14, ease: 'power3.out', delay: 0.15 });
+      gsap.from('.essay-list-title', { opacity: 0, y: 18, duration: 0.6, ease: 'power2.out', delay: 0.05 });
+    }
+  }
+
+  function bindBack() {
+    if (backBtn) backBtn.addEventListener('click', function () {
+      if (backBtn._action) backBtn._action();
+    });
   }
 
   function openPage() {
@@ -524,15 +556,17 @@
     document.body.classList.add('opened');
     if (pickerMode) {
       /* 选择页：卡片错落入场，不播音乐 */
+      setBack(backToCover);
       if (window.gsap && !reduceMotion) {
         gsap.fromTo('.select-card', { opacity: 0, y: 34 }, { opacity: 1, y: 0, duration: 0.8, stagger: 0.14, ease: 'power3.out', delay: 0.15 });
         gsap.from('.essay-list-title', { opacity: 0, y: 18, duration: 0.6, ease: 'power2.out', delay: 0.05 });
-        gsap.from('#backArrow', { opacity: 0, x: -10, duration: 0.5, ease: 'power2.out', delay: 0.1 });
       }
     } else {
       Music.start();
       Music.markPlaying();
       setTimeout(function () { $('#musicBadge').textContent = CFG.music.title || 'music'; }, 0);
+      if (ESSAYS.length > 1) setBack(backToSelect);
+      else hideBack();
     }
     setTimeout(initReveal, 120);
   }
@@ -938,6 +972,7 @@
     initProgress();
     bindCover();
     bindMusic();
+    bindBack();
     if (!pickerMode) Music.preload();   /* 提前预加载，进入即响 */
     initParticles();
     initCoverFX();
