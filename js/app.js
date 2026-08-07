@@ -151,15 +151,17 @@
     pickerMode = false;
     document.body.classList.remove('picker-mode');
 
+    /* 关键：在点击手势内【同步】启动音乐（移动端/微信自动播放必须在手势上下文，异步会失败） */
+    Music.reset();
+    Music.start();
+    Music.markPlaying();
+    setTimeout(function () { $('#musicBadge').textContent = CFG.music.title || 'music'; }, 0);
+
     function enter() {
       applyMeta();
       applyTheme(CFG.theme);
       renderEssay();
       initReveal();
-      Music.reset();
-      Music.start();
-      Music.markPlaying();
-      setTimeout(function () { $('#musicBadge').textContent = CFG.music.title || 'music'; }, 0);
       setBack(backToSelect);   /* 正文内可返回选择页读其他篇 */
     }
 
@@ -283,6 +285,7 @@
     fakeBase: 0,          // 合成模式本次播放起点（performance.now）
     lyricTimer: null,
     timeListener: null,
+    fallbackTimer: null,  // 4s 降级合成音的定时器（退出时必须清除，否则会后播）
 
     /* 页面加载即预加载音频，进入时立即出声 */
     preload: function () {
@@ -296,11 +299,12 @@
       this.audio = a;
     },
 
-    /* 切换随笔前重置音乐状态 */
+    /* 切换随笔/退出前重置音乐状态 */
     reset: function () {
+      if (this.fallbackTimer) { clearTimeout(this.fallbackTimer); this.fallbackTimer = null; }
       if (this.audio) {
         try { this.audio.pause(); } catch (e) {}
-        try { this.audio.removeAttribute('src'); } catch (e) {}
+        try { this.audio.removeAttribute('src'); this.audio.load(); } catch (e) {}  /* load() 中止未完成的加载/排队播放 */
         this.audio = null;
       }
       if (this.ctx) { try { this.ctx.close(); } catch (e) {} }
@@ -318,23 +322,24 @@
       if (!audio) { this.preload(); audio = this.audio; }
       if (!audio) return;
 
-      var fallbackTimer = setTimeout(function () {
-        if (!self.usingSynth && self.audio && !self.audio.paused) return; /* 已在播 */
-        if (!self.usingSynth) self.useSynth();
+      this.fallbackTimer = setTimeout(function () {
+        if (self.usingSynth) return;
+        if (self.audio && !self.audio.paused) return; /* 已在播 */
+        self.useSynth();
       }, 4000);
 
       audio.addEventListener('canplaythrough', function () {
-        clearTimeout(fallbackTimer);
+        if (self.fallbackTimer) { clearTimeout(self.fallbackTimer); self.fallbackTimer = null; }
         self.useAudio(audio);
       });
       audio.addEventListener('error', function () {
-        clearTimeout(fallbackTimer);
+        if (self.fallbackTimer) { clearTimeout(self.fallbackTimer); self.fallbackTimer = null; }
         self.useSynth();
       });
 
       /* 已预加载完成则直接播放 */
       if (audio.readyState >= 3) {
-        clearTimeout(fallbackTimer);
+        if (this.fallbackTimer) { clearTimeout(this.fallbackTimer); this.fallbackTimer = null; }
         this.useAudio(audio);
       } else {
         safePlay(audio);
@@ -997,20 +1002,16 @@
 
   var egg = $('#egg');
   var eggClose = $('#eggClose');
-  var eggInited = false;
 
   function showEgg() {
     if (!egg) return;
     egg.classList.add('show');
     document.body.classList.add('egg-open');
     egg.setAttribute('aria-hidden', 'false');
-    if (!eggInited && window.Egg3D) {
-      Egg3D.init('eggCanvasWrap', 'assets/images/egg-photo.jpg');
-      eggInited = true;
-    }
+    /* 相册已在页面加载时预构建完成，这里直接激活 → 秒开 */
     if (window.Egg3D) Egg3D.setActive(true);
     if (window.gsap && !reduceMotion) {
-      gsap.fromTo('.egg-line, .egg-sub', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.8, stagger: 0.15, ease: 'power2.out', delay: 0.25 });
+      gsap.fromTo('.egg-line', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out', delay: 0.25 });
     }
   }
 
@@ -1042,6 +1043,12 @@
     bindBack();
     if (eggClose) eggClose.addEventListener('click', hideEgg);
     if (!pickerMode) Music.preload();   /* 提前预加载，进入即响 */
+    /* 预构建彩蛋相册 + 预热彩蛋图片（触发时秒开，无需等待） */
+    if (window.Egg3D) {
+      try { Egg3D.init('eggCanvasWrap', 'assets/images/egg-photo.jpg'); } catch (e) {}
+    }
+    var eggPreload = new Image();
+    eggPreload.src = 'assets/images/egg-photo.jpg';
     initParticles();
     initCoverFX();
   }

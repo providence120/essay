@@ -178,6 +178,25 @@
     return group;
   }
 
+  /* 简易环境贴图（PMREM）：给亚克力材质提供反射，避免倾斜时 transmission 渲成黑色 */
+  function buildEnvironment(r) {
+    var pmrem = new THREE.PMREMGenerator(r);
+    var es = new THREE.Scene();
+    es.background = new THREE.Color(0x10131c);
+    function glow(x, y, z, w, h, color) {
+      var m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: color }));
+      m.position.set(x, y, z);
+      m.lookAt(0, 0, 0);
+      es.add(m);
+    }
+    glow(5, 3, 5, 9, 4, 0xe8c68a);
+    glow(-4, -2, 4, 8, 3, 0x667eea);
+    glow(0, 4, -3, 11, 3, 0xf093fb);
+    var tex = pmrem.fromScene(es, 0.05).texture;
+    pmrem.dispose();
+    return tex;
+  }
+
   function onResize() {
     var container = document.getElementById('eggCanvasWrap');
     if (!container || !camera || !renderer) return;
@@ -270,6 +289,7 @@
     var h = container.clientHeight || 400;
 
     scene = new THREE.Scene();
+    scene.environment = buildEnvironment(renderer);   /* 亚克力反射，防黑角 */
 
     camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
     camera.position.set(0, 0, 9);
