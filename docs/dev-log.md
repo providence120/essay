@@ -67,3 +67,4 @@ npx http-server -c-1 -p 8080   # 打开 http://localhost:8080
   2. **退出后仍在播**：`start()` 的 4s 降级合成音定时器退出时未清除，已改为 `reset()` 清理 + `audio.load()` 中止排队播放。
   3. **彩蛋相框慢/黑角**：相册改为**页面加载时预构建**并预热图片（触发即秒开）；亚克力 transmission 材质加 **PMREM 环境贴图**（金/蓝/粉反射），倾斜时不再渲成黑色边界。
 - 2026-08-06 **彩蛋相框完全不加载（两端）修复**：根因——`scene.environment = buildEnvironment(renderer)` 被写在 `renderer` 创建**之前**，`PMREMGenerator(undefined)` 抛错导致初始化整体中止。已移至 renderer 之后并加 try 保护；`showEgg` 增加"未就绪则重新初始化"兜底。
+- 2026-08-07 **音乐卡顿修复（后两篇）**：三首音乐用 ffmpeg 重编码为 **128kbps / 44.1kHz**（20MB → 8MB：again 1.81MB、shifou 3.38MB、peterpan 2.94MB），时长与可解码性校验一致；音乐 URL 加 `?v=2` 强制客户端拉取新文件；配合页面加载 `preloadAll` 全量预加载，手机不再边下边卡。
