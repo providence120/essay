@@ -286,27 +286,47 @@
     lyricTimer: null,
     timeListener: null,
     fallbackTimer: null,  // 4s 降级合成音的定时器（退出时必须清除，否则会后播）
+    pool: {},             // 按 src 缓存 <audio>，保证切篇/重进时秒开不卡
 
     /* 页面加载即预加载音频，进入时立即出声 */
     preload: function () {
-      if (this.audio) return;
-      var music = CFG.music;
-      var a = new Audio(music.src);
-      a.preload = 'auto';
-      a.loop = music.loop !== false;
-      a.volume = music.volume != null ? music.volume : 0.6;
-      a.load();
-      this.audio = a;
+      var src = CFG.music.src;
+      if (!this.pool[src]) {
+        var music = CFG.music;
+        var a = new Audio(src);
+        a.preload = 'auto';
+        a.loop = music.loop !== false;
+        a.volume = music.volume != null ? music.volume : 0.6;
+        a.load();
+        this.pool[src] = a;
+      }
+      this.audio = this.pool[src];
     },
 
-    /* 切换随笔/退出前重置音乐状态 */
+    /* 预加载所有随笔的音乐：进哪篇都先缓存好，手机不再卡顿 */
+    preloadAll: function () {
+      var self = this;
+      ESSAYS.forEach(function (e) {
+        if (!e.music || !e.music.src || self.pool[e.music.src]) return;
+        var a = new Audio(e.music.src);
+        a.preload = 'auto';
+        a.loop = e.music.loop !== false;
+        a.volume = e.music.volume != null ? e.music.volume : 0.6;
+        a.load();
+        self.pool[e.music.src] = a;
+      });
+      if (CFG && CFG.music && CFG.music.src && this.pool[CFG.music.src]) {
+        this.audio = this.pool[CFG.music.src];
+      }
+    },
+
+    /* 切换随笔/退出前重置音乐状态（保留 pool 缓冲，重进秒开） */
     reset: function () {
       if (this.fallbackTimer) { clearTimeout(this.fallbackTimer); this.fallbackTimer = null; }
       if (this.audio) {
         try { this.audio.pause(); } catch (e) {}
-        try { this.audio.removeAttribute('src'); this.audio.load(); } catch (e) {}  /* load() 中止未完成的加载/排队播放 */
-        this.audio = null;
       }
+      this.audio = null;
       if (this.ctx) { try { this.ctx.close(); } catch (e) {} }
       this.ctx = null;
       this.synthGain = null;
@@ -1046,7 +1066,7 @@
     bindMusic();
     bindBack();
     if (eggClose) eggClose.addEventListener('click', hideEgg);
-    if (!pickerMode) Music.preload();   /* 提前预加载，进入即响 */
+    Music.preloadAll();   /* 预加载所有随笔音乐，进哪篇都不卡 */
     /* 预构建彩蛋相册 + 预热彩蛋图片（触发时秒开，无需等待） */
     if (window.Egg3D) {
       try { Egg3D.init('eggCanvasWrap', 'assets/images/egg-photo.jpg'); } catch (e) {}
