@@ -1010,13 +1010,30 @@
     egg.setAttribute('aria-hidden', 'false');
     if (window.Egg3D) {
       if (!Egg3D.ready) {
-        try { Egg3D.init('eggCanvasWrap', 'assets/images/egg-photo.jpg'); } catch (e) {}
+        try { Egg3D.init('eggCanvasWrap', 'assets/images/egg-photo.jpg'); } catch (e) { console.error('egg init:', e); }
       }
-      Egg3D.setActive(true);
+      if (Egg3D.ready) {
+        Egg3D.setActive(true);
+      } else {
+        /* 给 3D 一个短暂机会（图片已预热），仍不行则降级为 2D 相框，保证有内容 */
+        setTimeout(function () {
+          if (Egg3D.ready) Egg3D.setActive(true);
+          else showEggFallback();
+        }, 700);
+      }
+    } else {
+      showEggFallback();
     }
     if (window.gsap && !reduceMotion) {
       gsap.fromTo('.egg-line', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out', delay: 0.25 });
     }
+  }
+
+  /* 2D 亚克力相框兜底：3D 不可用时保证照片与文案照常显示 */
+  function showEggFallback() {
+    var wrap = document.getElementById('eggCanvasWrap');
+    if (!wrap) return;
+    wrap.innerHTML = '<div class="egg-fallback"><img src="assets/images/egg-photo.jpg" alt="彩蛋照片" draggable="false" /></div>';
   }
 
   function hideEgg() {

@@ -21,6 +21,7 @@
   var isActive = false;
   var animationId = null;
   var isReady = false;
+  var isInited = false;
 
   function createClearAcrylic() {
     return new THREE.MeshPhysicalMaterial({
@@ -282,12 +283,15 @@
   }
 
   function init(containerId, photoUrl) {
+    if (isInited) return;                 /* 只初始化一次，避免重复建场景/画布 */
+    isInited = true;
     var container = document.getElementById(containerId);
-    if (!container || !window.THREE) return;
+    if (!container || !window.THREE) { window.Egg3D.ready = false; return; }
     var w = container.clientWidth || 300;
     var h = container.clientHeight || 400;
 
-    scene = new THREE.Scene();
+    try {
+      scene = new THREE.Scene();
 
     camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
     camera.position.set(0, 0, 9);
@@ -348,6 +352,13 @@
     img.src = photoUrl;
 
     window.addEventListener('resize', onResize);
+    } catch (err) {
+      console.error('egg init failed:', err);
+      window.Egg3D.ready = false;
+      if (renderer) { try { renderer.dispose(); } catch (e) {} }
+      renderer = null; canvas = null; scene = null; camera = null; albumGroup = null;
+      isReady = false; isInited = false;   /* 允许下次重试 */
+    }
   }
 
   function setActive(active) {
