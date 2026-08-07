@@ -22,19 +22,20 @@
   var animationId = null;
   var isReady = false;
 
-  /* 相框四边：磨砂半透明玻璃（不用 transmission——透明画布下透射会渲成黑色） */
   function createClearAcrylic() {
     return new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
       metalness: 0,
-      roughness: 0.18,
-      transmission: 0,
+      roughness: 0.08,
+      transmission: 0.95,
+      thickness: 0.3,
+      ior: 1.5,
       clearcoat: 1,
-      clearcoatRoughness: 0.08,
+      clearcoatRoughness: 0.05,
       transparent: true,
-      opacity: 0.5,
+      opacity: 1,
       side: THREE.DoubleSide,
-      envMapIntensity: 1.2
+      envMapIntensity: 1
     });
   }
 
