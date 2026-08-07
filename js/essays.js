@@ -80,7 +80,7 @@ window.ESSAYS = [
     music: {
       title: 'again',
       artist: '',
-      src: 'assets/audio/again.mp3',
+      src: 'assets/audio/again.mp3?v=2',
       loop: true,
       volume: 0.6,
       lyrics: [
@@ -205,7 +205,7 @@ window.ESSAYS = [
     music: {
       title: '是否',
       artist: '',
-      src: 'assets/audio/shifou.mp3',
+      src: 'assets/audio/shifou.mp3?v=2',
       loop: true,
       volume: 0.6,
       lyrics: [
@@ -365,7 +365,7 @@ window.ESSAYS = [
     music: {
       title: 'Peter Pan Was Right',
       artist: '',
-      src: 'assets/audio/peterpan.mp3',
+      src: 'assets/audio/peterpan.mp3?v=2',
       loop: true,
       volume: 0.6,
       lyrics: []
