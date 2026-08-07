@@ -1008,8 +1008,12 @@
     egg.classList.add('show');
     document.body.classList.add('egg-open');
     egg.setAttribute('aria-hidden', 'false');
-    /* 相册已在页面加载时预构建完成，这里直接激活 → 秒开 */
-    if (window.Egg3D) Egg3D.setActive(true);
+    if (window.Egg3D) {
+      if (!Egg3D.ready) {
+        try { Egg3D.init('eggCanvasWrap', 'assets/images/egg-photo.jpg'); } catch (e) {}
+      }
+      Egg3D.setActive(true);
+    }
     if (window.gsap && !reduceMotion) {
       gsap.fromTo('.egg-line', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out', delay: 0.25 });
     }

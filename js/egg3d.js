@@ -289,7 +289,6 @@
     var h = container.clientHeight || 400;
 
     scene = new THREE.Scene();
-    scene.environment = buildEnvironment(renderer);   /* 亚克力反射，防黑角 */
 
     camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
     camera.position.set(0, 0, 9);
@@ -306,6 +305,9 @@
     canvas = renderer.domElement;
     canvas.style.cursor = 'grab';
     canvas.style.touchAction = 'none';
+
+    /* 亚克力反射环境贴图（必须在 renderer 创建后；失败不影响主体） */
+    try { scene.environment = buildEnvironment(renderer); } catch (e) {}
 
     var ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
@@ -329,19 +331,22 @@
     var img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = function () {
-      var aspect = (img.naturalWidth || 1) / (img.naturalHeight || 1);
-      var width = 4.2 * aspect;
-      width = Math.max(2.2, Math.min(5.6, width));
-      var height = 4.2;
+      try {
+        var aspect = (img.naturalWidth || 1) / (img.naturalHeight || 1);
+        var width = 4.2 * aspect;
+        width = Math.max(2.2, Math.min(5.6, width));
+        var height = 4.2;
 
-      albumGroup = new THREE.Group();
-      scene.add(albumGroup);
-      albumGroup.add(createAlbumFrame(width, height));
-      albumGroup.add(createPhotoPlanes(photoUrl, width, height));
-      albumGroup.rotation.y = 0;   /* 进入时正面朝向 */
-      albumGroup.rotation.x = 0;
-      isReady = true;
-      bindDragRotation();
+        albumGroup = new THREE.Group();
+        scene.add(albumGroup);
+        albumGroup.add(createAlbumFrame(width, height));
+        albumGroup.add(createPhotoPlanes(photoUrl, width, height));
+        albumGroup.rotation.y = 0;   /* 进入时正面朝向 */
+        albumGroup.rotation.x = 0;
+        isReady = true;
+        window.Egg3D.ready = true;
+        bindDragRotation();
+      } catch (err) { console.error('egg album build failed:', err); }
     };
     img.src = photoUrl;
 
@@ -369,5 +374,5 @@
     isReady = false; isActive = false;
   }
 
-  window.Egg3D = { init: init, setActive: setActive, destroy: destroy };
+  window.Egg3D = { init: init, setActive: setActive, destroy: destroy, ready: false };
 })();
