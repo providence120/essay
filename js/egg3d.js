@@ -189,9 +189,8 @@
       m.lookAt(0, 0, 0);
       es.add(m);
     }
-    glow(5, 3, 5, 9, 4, 0xe8c68a);
-    glow(-4, -2, 4, 8, 3, 0x667eea);
-    glow(0, 4, -3, 11, 3, 0xf093fb);
+    glow(5, 3, 5, 9, 4, 0xe8c68a);   /* 金色 */
+    glow(-4, -2, 4, 8, 3, 0x667eea); /* 冷蓝 */
     var tex = pmrem.fromScene(es, 0.05).texture;
     pmrem.dispose();
     return tex;
@@ -323,9 +322,7 @@
     backLight.position.set(-3, 2, -4);
     scene.add(backLight);
 
-    var rimLight = new THREE.PointLight(0xf093fb, 0.8, 20);
-    rimLight.position.set(3, -2, 4);
-    scene.add(rimLight);
+    /* 原源码的粉色轮廓光已移除：四边亚克力颜色统一 */
 
     /* 先取图片尺寸 → 相册按比例自适应，再建相册（图片缓存后 TextureLoader 再加载一次） */
     var img = new Image();
