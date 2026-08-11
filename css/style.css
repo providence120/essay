@@ -539,7 +539,7 @@ body.picker-mode #lyricBar { display: none; }
   letter-spacing: 0.2em;
   margin-bottom: 3rem;
 }
-/* 篇目增多时内部滑动 */
+/* 篇目增多时内部滑动：滚动条默认隐藏，滚动时显示 */
 .essay-list-cards {
   max-height: calc(100vh - 17rem);
   overflow-y: auto;
@@ -547,18 +547,19 @@ body.picker-mode #lyricBar { display: none; }
   overscroll-behavior: contain;
   padding-right: 0.5rem;
   scrollbar-width: thin;
-  scrollbar-color: rgba(232, 198, 138, 0.35) transparent;
+  scrollbar-color: transparent transparent;
 }
-.essay-list-cards::-webkit-scrollbar { width: 4px; }
-.essay-list-cards::-webkit-scrollbar-thumb { background: rgba(232, 198, 138, 0.35); border-radius: 4px; }
-.essay-list-hint {
-  color: var(--text-dim);
-  font-size: 0.85rem;
-  letter-spacing: 0.2em;
-  text-indent: 0.2em;
-  margin-top: 1.1rem;
-  opacity: 0.65;
-  animation: floaty 2.4s ease-in-out infinite;
+.essay-list-cards.scrolling {
+  scrollbar-color: rgba(232, 198, 138, 0.4) transparent;
+}
+.essay-list-cards::-webkit-scrollbar { width: 5px; }
+.essay-list-cards::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+.essay-list-cards.scrolling::-webkit-scrollbar-thumb {
+  background: rgba(232, 198, 138, 0.4);
 }
 .essay-item {
   position: relative;

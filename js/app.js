@@ -119,14 +119,17 @@
       html += '</a>';
     });
     html += '</div>';
-    html += '<p class="essay-list-hint" id="listHint">&#9660; 下滑查看更多</p>';
     html += '</div>';
     essayRoot.innerHTML = html;
-    /* 篇目溢出时才显示下滑提示 */
+    /* 滚动条：滚动时显示，停手后隐藏 */
     var cards = $('.essay-list-cards');
-    var hint = $('#listHint');
-    if (cards && hint) {
-      hint.style.display = (cards.scrollHeight > cards.clientHeight) ? 'block' : 'none';
+    if (cards) {
+      var t;
+      cards.addEventListener('scroll', function () {
+        cards.classList.add('scrolling');
+        if (t) clearTimeout(t);
+        t = setTimeout(function () { cards.classList.remove('scrolling'); }, 900);
+      });
     }
   }
 
