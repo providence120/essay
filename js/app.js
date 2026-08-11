@@ -110,7 +110,7 @@
   function renderSelect() {
     var html = '<div class="essay-list">';
     html += '<h2 class="essay-list-title">随笔集</h2>';
-    html += '<div class="essay-list-cards">';
+    html += '<div class="essay-list-cards"><div class="cards-scrollbar"></div>';
     ESSAYS.forEach(function (e) {
       html += '<a class="essay-item select-card" href="?id=' + encodeURIComponent(e.id) + '" data-id="' + esc(e.id) + '">';
       html += '<span class="essay-item-title">' + esc(e.listTitle || e.id) + '</span>';
@@ -121,15 +121,27 @@
     html += '</div>';
     html += '</div>';
     essayRoot.innerHTML = html;
-    /* 滚动条：滚动时显示，停手后隐藏 */
+    /* 自定义滚动条：滚动时淡入、停手 0.9s 后淡出 */
     var cards = $('.essay-list-cards');
-    if (cards) {
+    var sb = cards && cards.querySelector('.cards-scrollbar');
+    if (cards && sb) {
       var t;
+      function updateSb() {
+        var h = cards.clientHeight, sh = cards.scrollHeight;
+        if (sh <= h + 4) { sb.style.display = 'none'; return; }
+        sb.style.display = 'block';
+        var ratio = h / sh;
+        var bh = Math.max(26, h * ratio);
+        sb.style.height = bh + 'px';
+        sb.style.top = (cards.scrollTop * ratio) + 'px';
+      }
       cards.addEventListener('scroll', function () {
         cards.classList.add('scrolling');
+        updateSb();
         if (t) clearTimeout(t);
         t = setTimeout(function () { cards.classList.remove('scrolling'); }, 900);
       });
+      updateSb();
     }
   }
 
