@@ -35,6 +35,7 @@
 | `shoubi` | 杂文随笔 | 王极《again》（已裁 3.75s 前奏） | 含插图 photo-1.jpg |
 | `ye` | 夜 | 《是否》 | Nightly Voyage |
 | `boycat` | 男孩和猫 | Peter Pan Was Right | 含插图 photo-2.jpg（"猫爱吃零食"与"猫最信任的是男孩"之间） |
+| `qiuyi` | 又是一年秋 | 兰亭序 · 氛围 | Fall · Past；歌词彩蛋"人生若只如初见 / 何事秋风悲画扇" |
 
 分享链接：`网址?id=篇id`（如 `?id=boycat`）。
 
@@ -68,3 +69,4 @@ npx http-server -c-1 -p 8080   # 打开 http://localhost:8080
   3. **彩蛋相框慢/黑角**：相册改为**页面加载时预构建**并预热图片（触发即秒开）；亚克力 transmission 材质加 **PMREM 环境贴图**（金/蓝/粉反射），倾斜时不再渲成黑色边界。
 - 2026-08-06 **彩蛋相框完全不加载（两端）修复**：根因——`scene.environment = buildEnvironment(renderer)` 被写在 `renderer` 创建**之前**，`PMREMGenerator(undefined)` 抛错导致初始化整体中止。已移至 renderer 之后并加 try 保护；`showEgg` 增加"未就绪则重新初始化"兜底。
 - 2026-08-07 **音乐卡顿修复（后两篇）**：三首音乐用 ffmpeg 重编码为 **128kbps / 44.1kHz**（20MB → 8MB：again 1.81MB、shifou 3.38MB、peterpan 2.94MB），时长与可解码性校验一致；音乐 URL 加 `?v=2` 强制客户端拉取新文件；配合页面加载 `preloadAll` 全量预加载，手机不再边下边卡。
+- 2026-08-07 **新增第四篇随笔《又是一年秋》**（docx 导入 8 段原文；配乐《兰亭序 · 氛围》重编码 1.87MB；副标 Fall · Past；歌词彩蛋"人生若只如初见 / 何事秋风悲画扇"）。
