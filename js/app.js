@@ -396,10 +396,12 @@
           this._rampSynth(0);
           this._stopLyricCycle();
         }
-      } else if (this.srcNode) {
+      } else {
+        /* Web Audio 真实音乐：暂停/续播（注意暂停后 srcNode 为空，要用 realPaused 判断） */
         if (this.realPaused) {
+          this.realPaused = false;
           this._playDecoded(this.pool[CFG.music.src]);
-        } else {
+        } else if (this.srcNode) {
           this.realPaused = true;
           if (this.srcNode) { try { this.srcNode.stop(); } catch (e) {} this.srcNode = null; }
           this._stopLyricCycle();
