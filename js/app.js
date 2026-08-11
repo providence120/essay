@@ -474,28 +474,6 @@
       this._updateIcon();
     },
 
-    toggle: function () {
-      this.userPlayed = true;   /* 用户手动操作过音乐按钮 */
-      if (this.usingSynth) {
-        if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
-        if (this.paused) {
-          this.paused = false;
-          this._rampSynth(0.5);
-          this.fakeBase = performance.now() - this.fakeTime;
-          this._startLyricCycle();
-        } else {
-          this.paused = true;
-          this.fakeTime = performance.now() - this.fakeBase;
-          this._rampSynth(0);
-          this._stopLyricCycle();
-        }
-      } else if (this.audio) {
-        if (this.audio.paused) safePlay(this.audio);
-        else this.audio.pause();
-      }
-      this._updateIcon();
-    },
-
     _rampSynth: function (v) {
       if (!this.ctx || !this.synthGain) return;
       this.synthGain.gain.setTargetAtTime(v, this.ctx.currentTime, 0.3);
@@ -575,7 +553,7 @@
     },
 
     _updateIcon: function () {
-      var playing = this.usingSynth ? !this.paused : !!(this.audio && !this.audio.paused);
+      var playing = this.usingSynth ? !this.paused : !!(this.srcNode && !this.realPaused);
       musicBtn.classList.toggle('playing', playing);
     },
 
