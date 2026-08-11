@@ -273,60 +273,148 @@
     update();
   }
 
-  /* ================= 4. 音乐引擎 ================= */
+  /* ================= 4. 音乐引擎（Web Audio：fetch 下载 + 解码内存播放，永不流式卡顿） ================= */
   var Music = {
-    audio: null,          // <audio> 实例（有真实文件时）
+    pool: {},             // src -> { buf: ArrayBuffer, decoded: AudioBuffer }
+    AC: null,             // 共享 AudioContext
+    gain: null,           // 主音量
+    srcNode: null,        // 当前播放源
+    realPaused: false,    // 暂停标记
     usingSynth: false,    // 是否使用内置合成占位音乐
     ctx: null,            // AudioContext（合成模式）
     synthGain: null,      // 合成主音量
     paused: false,        // 合成模式暂停标记
-    userPlayed: false,    // 是否被用户手动点过音乐按钮（彩蛋：歌词仅手动开关后才轮播）
-    fakeTime: 0,          // 合成模式累计播放时长（ms）
-    fakeBase: 0,          // 合成模式本次播放起点（performance.now）
+    userPlayed: false,    // 彩蛋：歌词仅手动开关后轮播
+    fakeTime: 0,
+    fakeBase: 0,
     lyricTimer: null,
     timeListener: null,
-    fallbackTimer: null,  // 4s 降级合成音的定时器（退出时必须清除，否则会后播）
-    pool: {},             // 按 src 缓存 <audio>，保证切篇/重进时秒开不卡
+    fallbackTimer: null,
+    _wanted: false,
 
-    /* 页面加载即预加载音频，进入时立即出声 */
-    preload: function () {
-      var src = CFG.music.src;
-      if (!this.pool[src]) {
-        var music = CFG.music;
-        var a = new Audio(src);
-        a.preload = 'auto';
-        a.loop = music.loop !== false;
-        a.volume = music.volume != null ? music.volume : 0.6;
-        a.load();
-        this.pool[src] = a;
-      }
-      this.audio = this.pool[src];
-    },
-
-    /* 预加载所有随笔的音乐：进哪篇都先缓存好，手机不再卡顿 */
+    /* 页面加载即用 fetch 下载全部音乐（微信拦不住 fetch，比 <audio preload> 可靠） */
     preloadAll: function () {
+      if (typeof fetch !== 'function') return;
       var self = this;
       ESSAYS.forEach(function (e) {
         if (!e.music || !e.music.src || self.pool[e.music.src]) return;
-        var a = new Audio(e.music.src);
-        a.preload = 'auto';
-        a.loop = e.music.loop !== false;
-        a.volume = e.music.volume != null ? e.music.volume : 0.6;
-        a.load();
-        self.pool[e.music.src] = a;
+        var src = e.music.src;
+        self.pool[src] = { buf: null, decoded: null };
+        fetch(src).then(function (r) { return r.arrayBuffer(); })
+          .then(function (b) {
+            self.pool[src].buf = b;
+            if (self._wanted && !self.usingSynth && !self.srcNode) self._tryPlay();
+          })
+          .catch(function () {});
       });
-      if (CFG && CFG.music && CFG.music.src && this.pool[CFG.music.src]) {
-        this.audio = this.pool[CFG.music.src];
-      }
     },
 
-    /* 切换随笔/退出前重置音乐状态（保留 pool 缓冲，重进秒开） */
+    start: function () {
+      var self = this;
+      this._wanted = true;
+      /* 在手势内同步创建 AudioContext，确保 iOS/微信能出声 */
+      if (!this.AC) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) {
+          this.AC = new AC();
+          if (this.AC.state === 'suspended') this.AC.resume();
+        }
+      }
+      var src = CFG.music.src;
+      if (typeof fetch === 'function' && !this.pool[src]) {
+        this.pool[src] = { buf: null, decoded: null };
+        fetch(src).then(function (r) { return r.arrayBuffer(); })
+          .then(function (b) {
+            self.pool[src].buf = b;
+            if (self._wanted && !self.usingSynth && !self.srcNode) self._tryPlay();
+          })
+          .catch(function () {});
+      }
+      this.fallbackTimer = setTimeout(function () {
+        if (!self.usingSynth && !self.srcNode) self.useSynth();
+      }, 4000);
+      this._tryPlay();
+    },
+
+    _tryPlay: function () {
+      var src = CFG.music.src;
+      var entry = this.pool[src];
+      if (!entry || !entry.buf) return;
+      if (entry.decoded) { this._playDecoded(entry); return; }
+      var self = this;
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!this.AC) { if (!AC) { this.useSynth(); return; } this.AC = new AC(); }
+      var ac = this.AC;
+      ac.decodeAudioData(entry.buf.slice(0), function (decoded) {
+        entry.decoded = decoded;
+        if (self._wanted && !self.usingSynth) self._playDecoded(entry);
+      }, function () { self.useSynth(); });
+    },
+
+    _playDecoded: function (entry) {
+      var self = this;
+      if (this.fallbackTimer) { clearTimeout(this.fallbackTimer); this.fallbackTimer = null; }
+      this._stopSynth();
+      var ac = this.AC;
+      if (!ac) return;
+      if (ac.state === 'suspended') ac.resume();
+      if (!this.gain) {
+        this.gain = ac.createGain();
+        this.gain.gain.value = CFG.music.volume != null ? CFG.music.volume : 0.6;
+        this.gain.connect(ac.destination);
+      }
+      if (this.srcNode) { try { this.srcNode.stop(); } catch (e) {} }
+      var src = ac.createBufferSource();
+      src.buffer = entry.decoded;
+      src.loop = CFG.music.loop !== false;
+      src.connect(this.gain);
+      src.start(0);
+      this.srcNode = src;
+      this.realPaused = false;
+      this.usingSynth = false;
+      musicBadge.textContent = CFG.music.artist ? (CFG.music.title + ' · ' + CFG.music.artist) : CFG.music.title;
+      /* 内存占用控制：只保留当前篇的解码缓冲，其余释放 */
+      for (var k in this.pool) {
+        if (k !== CFG.music.src && this.pool[k].decoded) this.pool[k].decoded = null;
+      }
+      this._updateIcon();
+      if (this.userPlayed) this._startLyricCycle();
+    },
+
+    toggle: function () {
+      this.userPlayed = true;
+      if (this.usingSynth) {
+        if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+        if (this.paused) {
+          this.paused = false;
+          this._rampSynth(0.5);
+          this.fakeBase = performance.now() - this.fakeTime;
+          this._startLyricCycle();
+        } else {
+          this.paused = true;
+          this.fakeTime = performance.now() - this.fakeBase;
+          this._rampSynth(0);
+          this._stopLyricCycle();
+        }
+      } else if (this.srcNode) {
+        if (this.realPaused) {
+          this._playDecoded(this.pool[CFG.music.src]);
+        } else {
+          this.realPaused = true;
+          if (this.srcNode) { try { this.srcNode.stop(); } catch (e) {} this.srcNode = null; }
+          this._stopLyricCycle();
+        }
+      }
+      this._updateIcon();
+    },
+
+    /* 切换随笔/退出前重置（保留 pool 下载缓冲，解码只保留当前篇） */
     reset: function () {
       if (this.fallbackTimer) { clearTimeout(this.fallbackTimer); this.fallbackTimer = null; }
-      if (this.audio) {
-        try { this.audio.pause(); } catch (e) {}
-      }
-      this.audio = null;
+      if (this.srcNode) { try { this.srcNode.stop(); } catch (e) {} }
+      this.srcNode = null;
+      this.realPaused = false;
+      this._wanted = false;
       if (this.ctx) { try { this.ctx.close(); } catch (e) {} }
       this.ctx = null;
       this.synthGain = null;
@@ -334,53 +422,6 @@
       this.paused = false;
       this._stopLyricSync();
       this._stopLyricCycle();
-    },
-
-    start: function () {
-      var self = this;
-      var audio = this.audio;
-      if (!audio) { this.preload(); audio = this.audio; }
-      if (!audio) return;
-
-      this.fallbackTimer = setTimeout(function () {
-        if (self.usingSynth) return;
-        if (self.audio && !self.audio.paused) return; /* 已在播 */
-        self.useSynth();
-      }, 4000);
-
-      audio.addEventListener('canplaythrough', function () {
-        if (self.fallbackTimer) { clearTimeout(self.fallbackTimer); self.fallbackTimer = null; }
-        self.useAudio(audio);
-      });
-      audio.addEventListener('error', function () {
-        if (self.fallbackTimer) { clearTimeout(self.fallbackTimer); self.fallbackTimer = null; }
-        self.useSynth();
-      });
-
-      /* 已预加载完成则直接播放 */
-      if (audio.readyState >= 3) {
-        if (this.fallbackTimer) { clearTimeout(this.fallbackTimer); this.fallbackTimer = null; }
-        this.useAudio(audio);
-      } else {
-        safePlay(audio);
-      }
-    },
-
-    useAudio: function (audio) {
-      this._stopSynth();
-      this.audio = audio;
-      this.usingSynth = false;
-      musicBadge.textContent = CFG.music.artist ? (CFG.music.title + ' · ' + CFG.music.artist) : CFG.music.title;
-      var self = this;
-      audio.addEventListener('play', function () {
-        self._updateIcon();
-        if (self.userPlayed) self._startLyricSync();   /* 彩蛋：仅手动开关后才显示歌词 */
-      });
-      audio.addEventListener('pause', function () {
-        self._updateIcon();
-        self._stopLyricSync();
-      });
-      safePlay(audio);
     },
 
     useSynth: function () {
